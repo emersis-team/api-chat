@@ -6,14 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class FileMessage extends Model
 {
-    public $timestamps = false;
 
-    protected $with = [
-        'files',
+    protected $fillable = [
+        'file',
+        'original_file',
+        'description',
     ];
-
-    public function files()
-    {
-        return $this->morphMany('App\Models\File', 'attachable');
-    }
 }

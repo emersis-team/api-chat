@@ -15,8 +15,10 @@ class CreateConversationsTable extends Migration
     {
         Schema::create('conversations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id_1')->references('id')->on('users');
-            $table->foreignId('user_id_2')->references('id')->on('users');
+            $table->enum('type', array('0', '1')); //0 - Individual 1 - Grupal
+            $table->foreignId('user_id_1')->references('id')->on('users')->nullable();
+            $table->foreignId('user_id_2')->references('id')->on('users')->nullable();
+            $table->foreignId('group_id')->references('id')->on('groups')->nullable();
             $table->timestamps();
         });
     }

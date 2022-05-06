@@ -50,4 +50,10 @@ class User extends Authenticatable
         return $this->hasMany('App\Models\Message', 'receiver_id')->orderBy('created_at','desc');
     }
 
+    //Get groups for the user
+    public function groups()
+    {
+        return $this->belongsToMany('App\Group');
+    }
+
 }

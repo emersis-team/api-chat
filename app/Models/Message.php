@@ -11,10 +11,8 @@ class Message extends Model
         'message',
         'conversation_id',
         'sender_id',
-        'receiver_id',
         'message_type',
         'message_id',
-        'read_at'
     ];
 
     protected $with = [
@@ -36,5 +34,11 @@ class Message extends Model
     public function sender()
     {
         return $this->belongsTo('App\User', 'sender_id');
+    }
+
+    //Get MessageVisualizations for the message
+    public function message_visualizations()
+    {
+        return $this->hasMany('App\Models\MessageVisualization')->orderBy('created_at','desc');
     }
 }

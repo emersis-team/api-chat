@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateFileMessagesTable extends Migration
+class CreateGroupUserTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,9 @@ class CreateFileMessagesTable extends Migration
      */
     public function up()
     {
-        Schema::create('file_messages', function (Blueprint $table) {
-            $table->increments('id');
-            $table->string('file');
-            $table->string('original_file');
-            $table->string('description')->nullable($value = true);
+        Schema::create('group_user', function (Blueprint $table) {
+            $table->foreignId('group_id')->references('id')->on('groups');
+            $table->foreignId('user_id')->references('id')->on('users');
             $table->timestamps();
         });
     }
@@ -29,6 +27,6 @@ class CreateFileMessagesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('file_messages');
+        Schema::dropIfExists('group_user');
     }
 }
