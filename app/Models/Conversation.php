@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Conversation extends Model
 {
     protected $fillable = [
-        'type',  //0 - Individual 1 - Grupal
+        'type',  //'GROUP', 'INDIVIDUAL'
         'user_id_1', // Si type=0 -> contiene info Si type=1 -> NULL
         'user_id_2', // Si type=0 -> contiene info Si type=1 -> NULL
         'group_id',  // Si type=1 -> contiene info Si type=0 -> NULL

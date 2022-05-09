@@ -4,11 +4,13 @@ namespace App\Http\Controllers\API;
 
 use App\User;
 use App\Models\Message;
+use App\Models\UserContact;
 use App\Events\NewMessage;
 use App\Models\FileMessage;
 use App\Models\TextMessage;
 use App\Models\PositionMessage;
 use App\Models\Conversation;
+use App\Models\Group;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
@@ -22,17 +24,26 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class MessagesController extends Controller
 {
-    public function getConversations()
+    public function getConversations1(User $user)
     {
-        $user = Auth::user();
+        //$user = Auth::user();
+        $user_group_ids = array();
         $conversations = array();
         $active_users = array();
         $x = 0;
 
+        $user_groups = $user->groups();
+
+        foreach ($user_groups as $y => $user_group){
+            $user_group_ids[$y] = $user_group->id;
+        }
+
         $active_conversations = Conversation::where('user_id_1', $user->id)
                         ->orWhere('user_id_2', $user->id)
+                        ->orWhereIN('group_id', $user_groups)
                         ->with('user_1')
                         ->with('user_2')
+                        ->with('group')
                         ->orderBy('updated_at', 'desc')
                         ->get();
 
@@ -98,6 +109,146 @@ class MessagesController extends Controller
             'conversations' => $conversations,
         ]);
     }
+
+    public function getConversations(User $user)
+    {
+        //$user = Auth::user();
+        $conversations = array();
+        $active_users = array();
+        $x = 0;
+
+        $userContacsGroupIds = array();
+        $userContacsUserIds = array();
+        $i=0;
+        $g=0;
+
+        $userContacts = UserContact::where('user_id', $user->id)->get();
+
+        foreach($userContacts as $userContact){
+
+            if($userContact->contact_type == "App\\Models\\User"){
+                $userContacsUserIds[$i] = $userContact['contact_id'];
+                $i++;
+            }else{
+                $userContacsGroupIds[$g] = $userContact['contact_id'];
+                $g++;
+            }
+        }
+
+        $active_conversations = Conversation::where('user_id_1', $user->id)
+                                            ->whereIn('user_id_2', $userContacsUserIds)
+                                            ->orWhere(function ($query) use ($user, $userContacsUserIds){
+                                                $query->where('user_id_2', $user->id)
+                                                ->whereIn('user_id_1', $userContacsUserIds);
+                                            })
+                                            ->orWhere(function ($query) use ($user, $userContacsGroupIds){
+                                                $query->whereIN('group_id', $userContacsGroupIds);
+                                            })
+                                            ->with('user_1')
+                                            ->with('user_2')
+                                            ->with('groups')
+                                            ->orderBy('updated_at', 'desc')
+                                            ->get();
+
+        $i = 0;
+        $g = 0;
+        
+        foreach ($active_conversations as $x => $conversation) {
+            //TODO - Rediseñar calculo de mensajes NO leidos para un user y una conversacion
+            //$ammount_messages_no_read = count($conversation->messages_no_read->where('receiver_id',$user->id));
+            $ammount_messages_no_read = 1; //TODO
+
+            $contact_dest= array();
+
+            //Identifico el usuario o grupo DESTINO de la conversacion
+            if ($active_conversations[$x]->user_1->id != $user->id) {
+                $contact_dest = [
+                    'type' => "INDIVIDUAL",
+                    "id" => $active_conversations[$x]->user_1->id,
+                    "name" => $active_conversations[$x]->user_1->name,
+                ];
+                $active_users[$i] = $active_conversations[$x]->user_1->id;
+                $i++;
+            }elseif($active_conversations[$x]->user_1->id == $user->id){
+                $contact_dest = [
+                    'type' => "INDIVIDUAL",
+                    "id" => $active_conversations[$x]->user_2->id,
+                    "name" => $active_conversations[$x]->user_2->name,
+                ];
+                $active_users[$i] = $active_conversations[$x]->user_2->id;
+                $i++;
+            }else{
+                $contact_dest = [
+                    'type' => "GROUP",
+                    "id" => $active_conversations[$x]->group->id,
+                    "name" => $active_conversations[$x]->group->name,
+                ];
+                $active_groups[$g] = $active_conversations[$x]->group->id;
+                $g++;
+            }
+
+
+            $conversations[$x]['id']= $active_conversations[$x]->id;
+            $conversations[$x]['contact_dest']= $contact_dest;
+            $conversations[$x]['ammount_no_read']= $ammount_messages_no_read;
+        }
+        //Guardo el usuario logueado dentro de los usuarios con conversación activa
+        $active_users[$x+1] = $user->id;
+        sort($active_users);
+
+        //var_dump(count($active_users));
+
+        if (count($active_users) > 1) { //Existe alguna conversacion activa
+            $x++;
+        }
+
+        $inactive_users = User::whereNotIn('id', $active_users)
+                        ->whereIn('id', $userContacsUserIds)
+                        ->orderBy('name', 'asc')
+                        ->get();
+
+
+        $inactive_groups = Group::whereNotIn('id', $active_groups)
+                        ->whereIn('id', $userContacsGroupIds)
+                        ->orderBy('name', 'asc')
+                        ->get();
+
+        foreach ($inactive_users as $inactive_user) {
+            //Identifico el usuario DESTINO de la conversacion
+            $user_dest = [
+                "type" => "INDIVIDUAL",
+                "id" => $inactive_user->id,
+                "name" => $inactive_user->name,
+            ];
+
+            $conversations[$x]['id']= 0;
+            $conversations[$x]['user_dest']= $user_dest;
+            $conversations[$x]['ammount_no_read']= 0;
+
+            $x++;
+        }
+
+        foreach ($inactive_groups as $inactive_group) {
+            //Identifico el grupo DESTINO de la conversacion
+            $contact_dest = [
+                "type" => "GROUP",
+                "id" => $inactive_user->id,
+                "name" => $inactive_user->name,
+            ];
+
+            $conversations[$x]['id']= 0;
+            $conversations[$x]['contact_dest']= $contact_dest;
+            $conversations[$x]['ammount_no_read']= 0;
+
+            $x++;
+        }
+
+        return response()->json([
+            'user_origin' => $user->id,
+            'conversations' => $conversations,
+        ]);
+    }
+
     public function getMessagesFromUserOLD(Conversation $conversation)
     {
         $user = Auth::user();
