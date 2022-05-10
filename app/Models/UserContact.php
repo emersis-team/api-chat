@@ -10,6 +10,7 @@ class UserContact extends Model
         'user_id',
         'contact_type',
         'contact_id',
+        'last_read_at',
     ];
 
     //Get the owning contact model (USER o Group).

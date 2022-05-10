@@ -27,7 +27,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $hidden = [
-        'password', 'remember_token',
+        //'password', 'remember_token',
     ];
 
     /**
@@ -36,7 +36,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $casts = [
-        'email_verified_at' => 'datetime',
+        //'email_verified_at' => 'datetime',
     ];
 
     //Get messages_sent for the user
@@ -44,17 +44,4 @@ class User extends Authenticatable
     {
         return $this->hasMany('App\Models\Message', 'sender_id')->orderBy('created_at','desc');
     }
-
-    //Get messages_received for the user
-    public function messages_received()
-    {
-        return $this->hasMany('App\Models\Message', 'receiver_id')->orderBy('created_at','desc');
-    }
-
-    //Get groups for the user
-    public function groups()
-    {
-        return $this->belongsToMany('App\Group');
-    }
-
 }

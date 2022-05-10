@@ -34,6 +34,12 @@ class Conversation extends Model
     //Get Group for the conversation
     public function group()
     {
-        return $this->belongsTo('App\Group','group_id');
+        return $this->belongsTo('App\Models\Group','group_id');
+    }
+
+    //Get all of the message_visualizations for the conversation.
+    public function visualizations()
+    {
+        return $this->hasManyThrough('App\Models\MessageVisualization', 'App\Models\Message');
     }
 }

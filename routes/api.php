@@ -47,13 +47,15 @@ use Illuminate\Support\Facades\Route;
 //  });
 
  Route::group([
+    //'prefix' => 'v1',
     'namespace' => 'API',
+    'name' => 'api.',
 
 ], function () {
-        Route::get('/conversations?user_id={user_id}', 'MessagesController@getConversations');
-        Route::get('/{user_id}/conversations?user_id={user_id}&conversation_id={conversation_id}', 'MessagesController@getMessagesFromConversation');
-        Route::post('/{user_id}/textMessage', 'MessagesController@createTextMessage');
-        Route::post('/{user_id}/fileMessage', 'MessagesController@createFileMessage');
-        Route::post('/{user_id}/positionMessage', 'MessagesController@createPositionMessage');
+        Route::get('/{user_id}/conversations', 'MessagesController@getConversations');
+        Route::get('/{user_id}/conversations/{conversation_id}', 'MessagesController@getMessagesFromConversation');
+        Route::post('/textMessage', 'MessagesController@createTextMessage');
+        // Route::post('/{user_id}/fileMessage', 'MessagesController@createFileMessage');
+        Route::post('/positionMessage', 'MessagesController@createPositionMessage');
 
  });;

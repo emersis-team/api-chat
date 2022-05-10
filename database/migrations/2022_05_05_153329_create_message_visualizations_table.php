@@ -17,7 +17,6 @@ class CreateMessageVisualizationsTable extends Migration
             $table->id();
             $table->foreignId('message_id')->references('id')->on('messages');
             $table->foreignId('user_id')->references('id')->on('users');
-            $table->timestamp('read_at')->nullable();
             $table->timestamps();
         });
     }

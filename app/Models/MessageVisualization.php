@@ -9,7 +9,6 @@ class MessageVisualization extends Model
     protected $fillable = [
         'message_id',
         'user_id',
-        'read_at',
     ];
 
     //Get Message for the MessageVisualization

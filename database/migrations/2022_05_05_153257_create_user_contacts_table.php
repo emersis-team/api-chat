@@ -17,6 +17,7 @@ class CreateUserContactsTable extends Migration
             $table->id();
             $table->foreignId('user_id')->references('id')->on('users');
             $table->morphs('contact');
+            $table->timestamp('last_read_at')->nullable($value = true);
             $table->timestamps();
         });
     }

@@ -19,300 +19,311 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Validator;
+use Ramsey\Uuid\Type\Integer;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Illuminate\Validation\Rule;
 
 
 class MessagesController extends Controller
 {
-    public function getConversations1(User $user)
+
+    public function getConversations($user_id)
     {
         //$user = Auth::user();
-        $user_group_ids = array();
-        $conversations = array();
-        $active_users = array();
-        $x = 0;
 
-        $user_groups = $user->groups();
+        $user_id =intval($user_id);
+        try {
+            //Chequea que exista el usuario
+            $user = User::find($user_id);
 
-        foreach ($user_groups as $y => $user_group){
-            $user_group_ids[$y] = $user_group->id;
-        }
-
-        $active_conversations = Conversation::where('user_id_1', $user->id)
-                        ->orWhere('user_id_2', $user->id)
-                        ->orWhereIN('group_id', $user_groups)
-                        ->with('user_1')
-                        ->with('user_2')
-                        ->with('group')
-                        ->orderBy('updated_at', 'desc')
-                        ->get();
-
-        foreach ($active_conversations as $x => $conversation) {
-            $ammount_messages_no_read = count($conversation->messages_no_read->where('receiver_id',$user->id));
-            $user_dest= array();
-
-            //Identifico el usuario DESTINO de la conversacion
-            if ($active_conversations[$x]->user_1->id != $user->id) {
-                $user_dest = [
-                    "id" => $active_conversations[$x]->user_1->id,
-                    "name" => $active_conversations[$x]->user_1->name,
-                    "email" => $active_conversations[$x]->user_1->email
-                ];
-                $active_users[$x] = $active_conversations[$x]->user_1->id;
-            }else{
-                $user_dest = [
-                    "id" => $active_conversations[$x]->user_2->id,
-                    "name" => $active_conversations[$x]->user_2->name,
-                    "email" => $active_conversations[$x]->user_2->email
-                ];
-                $active_users[$x] = $active_conversations[$x]->user_2->id;
+            if ($user == null) {
+                throw new AccessDeniedHttpException(__('No existe el usuario.'));
             }
 
-            $ammount_messages_no_read = count($conversation->messages_no_read->where('receiver_id',$user->id));
+            $conversations = array();
+            $active_users = array();
+            $active_groups = array();
+            $userContacsGroupIds = array();
+            $userContactsUserIds = array();
 
-            $conversations[$x]['id']= $active_conversations[$x]->id;
-            $conversations[$x]['user_dest']= $user_dest;
-            $conversations[$x]['ammount_no_read']= $ammount_messages_no_read;
-        }
-        //Guardo el usuario logueado dentro de los usuarios con conversación activa
-        $active_users[$x+1] = $user->id;
-        sort($active_users);
+            $x = 0;
+            $i = 0;
+            $g = 0;
 
-        //var_dump(count($active_users));
+            //var_dump("User: " . $user_id);
 
-        if (count($active_users) > 1) { //Existe alguna conversacion activa
-            $x++;
-        }
+            $userContacts = UserContact::where('user_id', $user_id)->get();
 
-        $inactive_users = User::whereNotIn('id', $active_users)
+            foreach ($userContacts as $userContact) {
+
+                if ($userContact->contact_type == "App\\User") {
+                    //var_dump("USER_CONTACT_IND: " . $userContact);
+                    $userContactsUserIds[$i] = $userContact['contact_id'];
+                    $i++;
+                } else {
+                    //var_dump("USER_CONTACT_GROUP: " . $userContact);
+                    $userContacsGroupIds[$g] = $userContact['contact_id'];
+                    $g++;
+                }
+            }
+
+            $active_conversations = Conversation::where('type', 'INDIVIDUAL')
+                                                ->where('user_id_1', $user_id)
+                                                ->whereIn('user_id_2', $userContactsUserIds)
+                                                ->orWhere(function ($query) use ($user_id, $userContactsUserIds) {
+                                                    $query->where('type', 'INDIVIDUAL')
+                                                    ->where('user_id_2', $user_id)
+                                                    ->whereIn('user_id_1', $userContactsUserIds);
+                                                })
+                                                ->orWhere(function ($query) use ($userContacsGroupIds) {
+                                                    $query->where('type', 'GROUP')
+                                                    ->whereIN('group_id', $userContacsGroupIds);
+                                                })
+                                                ->with('user_1')
+                                                ->with('user_2')
+                                                ->with('group')
+                                                ->orderBy('updated_at', 'desc')
+                                                ->get();
+
+
+            $i = 0;
+            $g = 0;
+
+            foreach ($active_conversations as $x => $conversation) {
+                //var_dump("Entró a Active Conversations");
+
+                $contact_dest= array();
+
+                //Identifico el usuario o grupo DESTINO de la conversacion
+                if ($active_conversations[$x]->user_id_1 != null && $active_conversations[$x]->user_id_1 != $user_id) {
+                    $contact_dest = [
+                        'type' => "INDIVIDUAL",
+                        "id" => $active_conversations[$x]->user_id_1,
+                        "name" => $active_conversations[$x]->user_1->name,
+                    ];
+                    $active_users[$i] = $active_conversations[$x]->user_id_1;
+
+                    $last_visualizations = UserContact::where('user_id', $user_id)
+                                                    ->where('contact_type',"App\\User")
+                                                    ->where('contact_id', $active_users[$i])
+                                                    ->get("last_read_at");
+
+                    foreach($last_visualizations as $last_visualization){
+                        //var_dump("LAST visualizacion: " . $last_visualization['last_read_at']);
+
+                        $ammount_messages_no_read = count($conversation->messages->where('sender_id', '<>', $user_id)
+                                                                                ->where('created_at', '>', $last_visualization['last_read_at']));
+
+                        //var_dump("Cant de mjes sin leer para la conversación " .$conversation->id . ": " . $ammount_messages_no_read);
+                    }
+                    $i++;
+
+
+                } elseif ($active_conversations[$x]->user_id_1 != null && $active_conversations[$x]->user_id_1 == $user_id) {
+                    $contact_dest = [
+                        'type' => "INDIVIDUAL",
+                        "id" => $active_conversations[$x]->user_id_2,
+                        "name" => $active_conversations[$x]->user_2->name,
+                    ];
+                    $active_users[$i] = $active_conversations[$x]->user_id_2;
+
+                    $last_visualizations = UserContact::where('user_id', $user_id)
+                                                    ->where('contact_type',"App\\User")
+                                                    ->where('contact_id', $active_users[$i])
+                                                    ->get("last_read_at");
+
+                    foreach($last_visualizations as $last_visualization){
+                        //var_dump("LAST visualizacion: " . $last_visualization['last_read_at']);
+
+                        $ammount_messages_no_read = count($conversation->messages->where('sender_id', '<>', $user_id)
+                                                                                ->where('created_at', '>', $last_visualization['last_read_at']));
+
+                        //var_dump("Cant de mjes sin leer para la conversación " .$conversation->id . ": " . $ammount_messages_no_read);
+                    }
+                    $i++;
+
+                } elseif ($active_conversations[$x]->group_id != null) {
+                    $contact_dest = [
+                        'type' => "GROUP",
+                        "id" => $active_conversations[$x]->group_id,
+                        "name" => $active_conversations[$x]->group->name,
+                    ];
+                    $active_groups[$g] = $active_conversations[$x]->group_id;
+
+                    $last_visualizations = UserContact::where('user_id', $user_id)
+                                                    ->where('contact_type',"App\\Models\\Group")
+                                                    ->where('contact_id', $active_groups[$g])
+                                                    ->get("last_read_at");
+
+                    foreach($last_visualizations as $last_visualization){
+                        //var_dump("LAST visualizacion: " . $last_visualization['last_read_at']);
+
+                        $ammount_messages_no_read = count($conversation->messages->where('sender_id', '<>', $user_id)
+                                                                                 ->where('created_at', '>', $last_visualization['last_read_at']));
+
+                        //var_dump("Cant de mjes sin leer para la conversación " .$conversation->id . ": " . $ammount_messages_no_read);
+                    }
+
+                    $g++;
+                }
+
+                $conversations[$x]['conversation_id']= $active_conversations[$x]->id;
+                $conversations[$x]['contact_dest']= $contact_dest;
+                $conversations[$x]['ammount_no_read']= $ammount_messages_no_read;
+            }
+            //Guardo el usuario logueado dentro de los usuarios con conversación activa
+            if($i > 0){
+                $active_users[$i+1] = $user_id;
+            }else{
+                $active_users[$i] = $user_id;
+            }
+
+            sort($active_users);
+
+            //var_dump($active_users[$i]);
+
+            if (count($active_users) > 1 || count($active_groups) > 0) { //Existe alguna conversacion activa
+                $x++;
+            }
+
+            $inactive_users = User::whereNotIn('id', $active_users)
+                        ->whereIn('id', $userContactsUserIds)
                         ->orderBy('name', 'asc')
                         ->get();
 
 
-        foreach ($inactive_users as $inactive_user) {
-            //Identifico el usuario DESTINO de la conversacion
-            $user_dest = [
-                "id" => $inactive_user->id,
-                "name" => $inactive_user->name,
-                "email" => $inactive_user->email
-            ];
-
-            $conversations[$x]['id']= 0;
-            $conversations[$x]['user_dest']= $user_dest;
-            $conversations[$x]['ammount_no_read']= 0;
-
-            $x++;
-        }
-
-        return response()->json([
-            'user_origin' => $user->id,
-            'conversations' => $conversations,
-        ]);
-    }
-
-    public function getConversations(User $user)
-    {
-        //$user = Auth::user();
-        $conversations = array();
-        $active_users = array();
-        $x = 0;
-
-        $userContacsGroupIds = array();
-        $userContacsUserIds = array();
-        $i=0;
-        $g=0;
-
-        $userContacts = UserContact::where('user_id', $user->id)->get();
-
-        foreach($userContacts as $userContact){
-
-            if($userContact->contact_type == "App\\Models\\User"){
-                $userContacsUserIds[$i] = $userContact['contact_id'];
-                $i++;
-            }else{
-                $userContacsGroupIds[$g] = $userContact['contact_id'];
-                $g++;
-            }
-        }
-
-        $active_conversations = Conversation::where('user_id_1', $user->id)
-                                            ->whereIn('user_id_2', $userContacsUserIds)
-                                            ->orWhere(function ($query) use ($user, $userContacsUserIds){
-                                                $query->where('user_id_2', $user->id)
-                                                ->whereIn('user_id_1', $userContacsUserIds);
-                                            })
-                                            ->orWhere(function ($query) use ($user, $userContacsGroupIds){
-                                                $query->whereIN('group_id', $userContacsGroupIds);
-                                            })
-                                            ->with('user_1')
-                                            ->with('user_2')
-                                            ->with('groups')
-                                            ->orderBy('updated_at', 'desc')
-                                            ->get();
-
-        $i = 0;
-        $g = 0;
-        
-        foreach ($active_conversations as $x => $conversation) {
-            //TODO - Rediseñar calculo de mensajes NO leidos para un user y una conversacion
-            //$ammount_messages_no_read = count($conversation->messages_no_read->where('receiver_id',$user->id));
-            $ammount_messages_no_read = 1; //TODO
-
-            $contact_dest= array();
-
-            //Identifico el usuario o grupo DESTINO de la conversacion
-            if ($active_conversations[$x]->user_1->id != $user->id) {
-                $contact_dest = [
-                    'type' => "INDIVIDUAL",
-                    "id" => $active_conversations[$x]->user_1->id,
-                    "name" => $active_conversations[$x]->user_1->name,
-                ];
-                $active_users[$i] = $active_conversations[$x]->user_1->id;
-                $i++;
-            }elseif($active_conversations[$x]->user_1->id == $user->id){
-                $contact_dest = [
-                    'type' => "INDIVIDUAL",
-                    "id" => $active_conversations[$x]->user_2->id,
-                    "name" => $active_conversations[$x]->user_2->name,
-                ];
-                $active_users[$i] = $active_conversations[$x]->user_2->id;
-                $i++;
-            }else{
-                $contact_dest = [
-                    'type' => "GROUP",
-                    "id" => $active_conversations[$x]->group->id,
-                    "name" => $active_conversations[$x]->group->name,
-                ];
-                $active_groups[$g] = $active_conversations[$x]->group->id;
-                $g++;
-            }
-
-
-            $conversations[$x]['id']= $active_conversations[$x]->id;
-            $conversations[$x]['contact_dest']= $contact_dest;
-            $conversations[$x]['ammount_no_read']= $ammount_messages_no_read;
-        }
-        //Guardo el usuario logueado dentro de los usuarios con conversación activa
-        $active_users[$x+1] = $user->id;
-        sort($active_users);
-
-        //var_dump(count($active_users));
-
-        if (count($active_users) > 1) { //Existe alguna conversacion activa
-            $x++;
-        }
-
-        $inactive_users = User::whereNotIn('id', $active_users)
-                        ->whereIn('id', $userContacsUserIds)
-                        ->orderBy('name', 'asc')
-                        ->get();
-
-
-        $inactive_groups = Group::whereNotIn('id', $active_groups)
+            $inactive_groups = Group::whereNotIn('id', $active_groups)
                         ->whereIn('id', $userContacsGroupIds)
                         ->orderBy('name', 'asc')
                         ->get();
 
-        foreach ($inactive_users as $inactive_user) {
-            //Identifico el usuario DESTINO de la conversacion
-            $user_dest = [
+            foreach ($inactive_users as $inactive_user) {
+                //Identifico el usuario DESTINO de la conversacion
+                $contact_dest = [
                 "type" => "INDIVIDUAL",
                 "id" => $inactive_user->id,
                 "name" => $inactive_user->name,
             ];
 
-            $conversations[$x]['id']= 0;
-            $conversations[$x]['user_dest']= $user_dest;
-            $conversations[$x]['ammount_no_read']= 0;
+                $conversations[$x]['conversation_id']= 0;
+                $conversations[$x]['contact_dest']= $contact_dest;
+                $conversations[$x]['ammount_no_read']= 0;
 
-            $x++;
-        }
+                $x++;
+            }
 
-        foreach ($inactive_groups as $inactive_group) {
-            //Identifico el grupo DESTINO de la conversacion
-            $contact_dest = [
+            foreach ($inactive_groups as $inactive_group) {
+                //Identifico el grupo DESTINO de la conversacion
+                $contact_dest = [
                 "type" => "GROUP",
-                "id" => $inactive_user->id,
-                "name" => $inactive_user->name,
+                "id" => $inactive_group->id,
+                "name" => $inactive_group->name,
             ];
 
-            $conversations[$x]['id']= 0;
-            $conversations[$x]['contact_dest']= $contact_dest;
-            $conversations[$x]['ammount_no_read']= 0;
+                $conversations[$x]['conversation_id']= 0;
+                $conversations[$x]['contact_dest']= $contact_dest;
+                $conversations[$x]['ammount_no_read']= 0;
 
-            $x++;
+                $x++;
+            }
+
+            return response()->json([
+                'user_origin' => $user_id,
+                'conversations' => $conversations,
+            ]);
         }
 
-        return response()->json([
-            'user_origin' => $user->id,
-            'conversations' => $conversations,
-        ]);
-    }
-
-    public function getMessagesFromUserOLD(Conversation $conversation)
-    {
-        $user = Auth::user();
-        $messages = [];
-
-        if ($user->id !== $conversation->user_id_1 && $user->id !== $conversation->user_id_2) {
-            throw new AccessDeniedHttpException(__('No existe la conversación para el usuario.'));
+        catch (QueryException $e) {
+            throw new \Error('Hay un Error SQL');
         }
 
-        //Devuelve los mensajes de una Conversacion y pone como READ todos los mjes no leidos
+        catch (\Throwable $e) {
 
-        $messages = Message::where('conversation_id', $conversation->id)
-                            ->orderBy('created_at', 'asc')
-                            ->paginate(10);
-
-        Message::where('receiver_id',$user->id)
-                ->where('read_at',NULL)
-                ->update(['read_at' => now()]);
-
-        return response()->json([
-            'user_origin' => $user->id,
-            'messages' => $messages,
-        ]);
-
+            $code = $e->getCode() ? $e->getCode() : 500;
+            return response()->json([
+                'status' => $e->getCode() ? $e->getCode() : 500,
+                'message' => $e->getMessage()
+            ], $code);
+        }
     }
-    public function getMessagesFromConversation($request)
+    public function getMessagesFromConversation($user_id, $conversation_id)
     {
-        //Se envía el id de la conversación por $request porque puede enviarse id=0 y sino rebotaría porque no existe en la BD
-        $user = Auth::user();
-        $conversation_id = intval($request);
+        //Se envía el id de la conversación por $conversation_id porque puede enviarse id=0 y sino rebotaría porque no existe en la BD
+        //$user = Auth::user();
+        $user_id = intval($user_id);
+        $conversation_id = intval($conversation_id);
 
         try {
-            // var_dump($conversation_id);
-            // var_dump($request);
+            //var_dump("Conversacion ID: " . $conversation_id);
+
+            //Chequea que exista el usuario
+            $user = User::find($user_id);
+
+            if ($user == null) {
+                throw new AccessDeniedHttpException(__('No existe el usuario.'));
+            }
 
             if ($conversation_id > 0) {
-                //Chequear que exista la conversacion y pertenezca al usuario logueado
-                $conversation = Conversation::where('id', $conversation_id)
-                                          ->first();
+                //Chequea que exista la conversacion
+                $conversation = Conversation::where('id',$conversation_id)
+                                            ->first();
 
                 if (!$conversation) {
                     throw new AccessDeniedHttpException(__('No existe la conversación.'));
-                } else { //Existe el id de conversacion PERO NO pertenece al usuario logueado
-                    if (($user->id !== $conversation->user_id_1 && $user->id !== $conversation->user_id_2)) {
-                        throw new AccessDeniedHttpException(__('No existe la conversación para el usuario.'));
+
+                } else {
+                    //Chequea que la conversacion pertenezca al usuario logueado, si es así actualiza la fecha última de visualización de esta conversación/contacto
+                    if ($conversation->type == "INDIVIDUAL") {
+
+                        if($user_id !== $conversation->user_id_1 && $user_id !== $conversation->user_id_2){
+                            throw new AccessDeniedHttpException(__('El usuario NO es parte de la conversación individual.'));
+                        }else{
+                            //Averigua cual es el contact_id (user) para luego actualizar la tabla user_contacts con la ultima fecha de visualización de la conversación con ese contacto
+                            if($conversation->user_id_1 == $user_id){
+                                $contact_id = $conversation->user_id_2;
+                            }else{
+                                $contact_id = $conversation->user_id_1;
+                            }
+
+                            //Actualiza la fecha última de visualización de esta conversación/contacto
+                            UserContact::where('contact_type', "App\\User")
+                                    ->where('user_id', $user->id)
+                                    ->where('contact_id', $contact_id)
+                                    ->update(['last_read_at' => now()]);
+                        }
+
+                    }elseif ($conversation->type == "GROUP") {
+
+                        $user_valid_groups = UserContact::where('user_id', $user_id)
+                                                        ->where('contact_type', "App\\Models\\Group")
+                                                        ->where('contact_id', $conversation->group_id)->first();
+                        if(!$user_valid_groups) {
+                            throw new AccessDeniedHttpException(__('El usuario NO tiene permisos para acceder a la conversación grupal.'));
+                        }
+
+                        //Actualiza la fecha última de visualización de esta conversación/contacto
+                        UserContact::where('contact_type', "App\\Models\\Group")
+                                    ->where('user_id', $user->id)
+                                    ->where('contact_id', $conversation->group_id)
+                                    ->update(['last_read_at' => now()]);
                     }
                 }
 
-                //Devuelve los mensajes de una Conversacion y pone como READ todos los mjes no leidos
+                //Devuelve los mensajes de una Conversacion
                 $messages = Message::where('conversation_id', $conversation->id)
                                     ->orderBy('created_at', 'desc')
                                     ->paginate(10);
 
-                Message::where('conversation_id', $conversation->id)
-                    ->where('receiver_id', $user->id)
-                    ->where('read_at', null)
-                    ->update(['read_at' => now()]);
+                //TODO - ANALIZAR si se insertará visualización en la tabla message_visualizations
+
             }else{
                 $messages = Message::where('conversation_id', 0)
                                  ->paginate(10);
             }
 
+            //TODO - Devolución de la info necesaria, eliminar los datos NO necesarios
             return response()->json([
-                'user_origin' => $user->id,
+                'user_origin' => $user_id,
                 'messages' => $messages,
             ]);
         }
@@ -334,56 +345,99 @@ class MessagesController extends Controller
     }
     public function createTextMessage(Request $request)
     {
-        $user = Auth::user();
+        //$user = Auth::user();
 
         DB::beginTransaction();
         try {
 
             //Chequea los campos de entrada
             $campos = $request->validate([
+                'user_id' => ['required','integer', 'exists:users,id'],
+                'contact_type' => ['required', Rule::in(['INDIVIDUAL', 'GROUP'])],
+                'contact_id' => ['required','integer'],
                 'message' => ['required','string', 'max:255'],
-                'receiver_id' => ['required','integer', 'exists:users,id'],
             ]);
 
-            $user_dest = User::where('id',$campos['receiver_id'])
-                        ->first();
-            if (!$user_dest || $user->id == $campos['receiver_id']) {
-                throw new AccessDeniedHttpException(__('No se puede enviar mensaje al usuario destino.'));
+            $user = User::find($campos['user_id']);
+            if ($user == null) {
+                throw new AccessDeniedHttpException(__('No existe el usuario.'));
             }
-            $conversation = Conversation::where(function($q) use ($user, $campos){
-                                            $q->where('user_id_1', $user->id);
-                                            $q->where('user_id_2', $campos['receiver_id']);
-                                        })
-                                        ->orWhere(function($q) use ($user, $campos){
-                                            $q->where('user_id_2', $user->id);
-                                            $q->where('user_id_1', $campos['receiver_id']);
-                                        })
-                                        ->first();
 
-            if (!$conversation){ //La conversacion NO existe, se crea antes del mensaje
-                $conversation = Conversation::create([
-                    'user_id_1' => $user->id,
-                    'user_id_2' => $campos['receiver_id'],
-                    ]);
+             //Según tipo de contact_type, chequea que exista el usuario o grupo destino (contact_id) como contacto del usuario logueado
 
-                if (!$conversation) {
-                   throw new \Error('No se pudo crear la conversación.');
+             if($campos['contact_type'] == "INDIVIDUAL"){
+                $contact_dest = UserContact::where('user_id',$campos['user_id'])
+                                            ->where('contact_type', "App\\User")
+                                            ->where('contact_id', $campos['contact_id'])
+                                            ->first();
+
+                if (!$contact_dest) {
+                    throw new AccessDeniedHttpException(__('El usuario a quien se quiere enviar el mensaje, NO es un contacto válido.'));
                 }
-            }
+
+                //Si está OK el contact_dest -> se busca la conversación y sino se la crea
+                $conversation = Conversation::where('type', 'INDIVIDUAL')
+                                            ->where(function($q) use ($user, $campos){
+                                                $q->where('user_id_1', $user->id);
+                                                $q->where('user_id_2', $campos['contact_id']);
+                                            })
+                                            ->orWhere(function($q) use ($user, $campos){
+                                                $q->where('user_id_2', $user->id);
+                                                $q->where('user_id_1', $campos['contact_id']);
+                                            })
+                                            ->first();
+
+                if (!$conversation){ //La conversacion NO existe, se crea antes del mensaje
+                    $conversation = Conversation::create([
+                        'type' => 'INDIVIDUAL',
+                        'user_id_1' => $user->id,
+                        'user_id_2' => $campos['contact_id'],
+                        ]);
+
+                    if (!$conversation) {
+                       throw new \Error('No se pudo crear la conversación.');
+                    }
+                }
+
+             }else{
+                $contact_dest = UserContact::where('user_id',$campos['user_id'])
+                                            ->where('contact_type', "App\\Models\\Group")
+                                            ->where('contact_id', $campos['contact_id'])
+                                            ->first();
+
+                if (!$contact_dest) {
+                    throw new AccessDeniedHttpException(__('El usuario NO pertenece grupo al que se quiere enviar el mensaje.'));
+                }
+
+                //Si está OK el contact_dest -> se busca la conversación y sino se la crea
+                $conversation = Conversation::where('type', 'GROUP')
+                                            ->where('group_id', $campos['contact_id'])
+                                            ->first();
+
+                if (!$conversation){ //La conversacion NO existe, se crea antes del mensaje
+                    $conversation = Conversation::create([
+                        'type' => 'GROUP',
+                        'group_id' => $campos['contact_id'],
+                        ]);
+
+                    if (!$conversation) {
+                       throw new \Error('No se pudo crear la conversación.');
+                    }
+                }
+             }
 
             //Crea el mje de texto
             $text_message = TextMessage::create([
                 'text' => $campos['message']
-              ]);
+            ]);
 
-              if (!$text_message) {
+            if (!$text_message) {
                 throw new \Error('No se pudo crear el mensaje de texto.');
-              }
+            }
 
             // Crea el mensaje y lo asocia a la conversacion
             $message = Message::create([
                 'sender_id' => $user->id,
-                'receiver_id' => (int) $campos['receiver_id'],
                 'conversation_id' => $conversation->id,
                 'message_type' => get_class($text_message),
                 'message_id' => $text_message->id,
@@ -399,17 +453,14 @@ class MessagesController extends Controller
             DB::commit();
 
             //Se lanza evento de Nuevo Mensaje
-            broadcast(new NewMessage($message));
+            //broadcast(new NewMessage($message));
 
             return response()->json([
                 'status' => 200,
                 'message' => 'Creación del mensaje de TEXTO realizada con éxito',
                 'conversation_id' => $message->conversation_id,
-                'message_id' => $message->id,
                 "sender_id" => $message->sender_id,
-                "receiver_id" => $message->receiver_id,
-                "read_at" => $message->read_at,
-                'message_created' => $message->message
+                'message_created' => $message->message->text,
             ]);
 
         }
@@ -430,14 +481,16 @@ class MessagesController extends Controller
     }
     public function createFileMessage(Request $request)
     {
-        $user = Auth::user();
+        //$user = Auth::user();
 
         $files = array();
 
         $validator = Validator::make(
             $request->all(),
             [
-                'receiver_id' => ['required','integer'],
+                'user_id' => ['required','integer', 'exists:users,id'],
+                'contact_type' => ['required', Rule::in(['INDIVIDUAL', 'GROUP'])],
+                'contact_id' => ['required','integer'],
                 'file' => ['required', 'array'],
                 'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
                 'description' => ['sometimes', 'array'],
@@ -460,40 +513,73 @@ class MessagesController extends Controller
 
             $campos = $request;
 
-            $user_dest = User::where('id',$campos['receiver_id'])
-                        ->first();
-
-            if (!$user_dest || $user->id == $campos['receiver_id']) {
-                throw new AccessDeniedHttpException(__('No se puede enviar mensaje al usuario destino.'));
+            $user = User::find($campos['user_id']);
+            if ($user == null) {
+                throw new AccessDeniedHttpException(__('No existe el usuario.'));
             }
 
-            $conversation = Conversation::where(function($q) use ($user, $campos){
-                                            $q->where('user_id_1', $user->id);
-                                            $q->where('user_id_2', $campos['receiver_id']);
-                                        })
-                                        ->orWhere(function($q) use ($user, $campos){
-                                            $q->where('user_id_2', $user->id);
-                                            $q->where('user_id_1', $campos['receiver_id']);
-                                        })
-                                        ->first();
+             //Según tipo de contact_type, chequea que exista el usuario o grupo destino (contact_id) como contacto del usuario logueado
 
-            if (!$conversation){ //La conversacion NO existe, se crea antes del mensaje
-                $conversation = Conversation::create([
-                    'user_id_1' => $user->id,
-                    'user_id_2' => $campos['receiver_id'],
-                    ]);
+             if($campos['contact_type'] == "INDIVIDUAL"){
+                $contact_dest = UserContact::where('user_id',$campos['user_id'])
+                                            ->where('contact_type', "App\\User")
+                                            ->where('contact_id', $campos['contact_id'])
+                                            ->first();
 
-                if (!$conversation) {
-                   throw new \Error('No se pudo crear la conversación.');
+                if (!$contact_dest) {
+                    throw new AccessDeniedHttpException(__('El usuario a quien se quiere enviar el mensaje, NO es un contacto válido.'));
                 }
-            }
 
-            //Crea el mje de file
-            $file_message = FileMessage::create();
+                //Si está OK el contact_dest -> se busca la conversación y sino se la crea
+                $conversation = Conversation::where('type', 'INDIVIDUAL')
+                                            ->where(function($q) use ($user, $campos){
+                                                $q->where('user_id_1', $user->id);
+                                                $q->where('user_id_2', $campos['contact_id']);
+                                            })
+                                            ->orWhere(function($q) use ($user, $campos){
+                                                $q->where('user_id_2', $user->id);
+                                                $q->where('user_id_1', $campos['contact_id']);
+                                            })
+                                            ->first();
 
-            if (!$file_message) {
-                throw new \Error('No se pudo crear el file_message.');
-            }
+                if (!$conversation){ //La conversacion NO existe, se crea antes del mensaje
+                    $conversation = Conversation::create([
+                        'type' => 'INDIVIDUAL',
+                        'user_id_1' => $user->id,
+                        'user_id_2' => $campos['contact_id'],
+                        ]);
+
+                    if (!$conversation) {
+                       throw new \Error('No se pudo crear la conversación.');
+                    }
+                }
+
+             }else{
+                $contact_dest = UserContact::where('user_id',$campos['user_id'])
+                                            ->where('contact_type', "App\\Models\\Group")
+                                            ->where('contact_id', $campos['contact_id'])
+                                            ->first();
+
+                if (!$contact_dest) {
+                    throw new AccessDeniedHttpException(__('El usuario NO pertenece grupo al que se quiere enviar el mensaje.'));
+                }
+
+                //Si está OK el contact_dest -> se busca la conversación y sino se la crea
+                $conversation = Conversation::where('type', 'GROUP')
+                                            ->where('group_id', $campos['contact_id'])
+                                            ->first();
+
+                if (!$conversation){ //La conversacion NO existe, se crea antes del mensaje
+                    $conversation = Conversation::create([
+                        'type' => 'GROUP',
+                        'group_id' => $campos['contact_id'],
+                        ]);
+
+                    if (!$conversation) {
+                       throw new \Error('No se pudo crear la conversación.');
+                    }
+                }
+             }
 
             foreach ($request->file('file') as $index => $file) {
                 $original_filename = $file->getClientOriginalName();
@@ -504,9 +590,8 @@ class MessagesController extends Controller
                 $filename  = "";
 
                 //Concateno si hubieran varios . sólo me interesa separar el último
-                for($i=0;$i<=$cant-2;$i++){
-
-                    if($i!=0){
+                for ($i=0;$i<=$cant-2;$i++) {
+                    if ($i!=0) {
                         $filename  = $filename . '.';
                     }
                     $filename  = $filename . $name[$i];
@@ -522,45 +607,44 @@ class MessagesController extends Controller
                     'original_file' => $original_filename,
                     'description' => isset($campos['description'][$index]) ? $campos['description'][$index] : $file->getClientOriginalName(),
                 ];
+
+                //Crea el mje de file
+                $file_message = FileMessage::create([
+                    'file' => 'files/' . $filename,
+                    'original_file' => $original_filename,
+                    'description' => isset($campos['description'][$index]) ? $campos['description'][$index] : $file->getClientOriginalName(),
+                ]);
+
+                if (!$file_message) {
+                    throw new \Error('No se pudo crear el file_message.');
+                }
+
+                // Crea el mensaje y lo asocia a la conversacion
+                $message = Message::create([
+                    'sender_id' => $user->id,
+                    'conversation_id' => $conversation->id,
+                    'message_type' => get_class($file_message),
+                    'message_id' => $file_message->id
+                ]);
+
+                if (!$message) {
+                    throw new \Error('No se pudo crear el mensaje.');
+                }
             }
-
-            //VER cómo manejar el error en BD!!
-            $attachments = $file_message->files()->createMany($files);
-
-            if (!$attachments) {
-                throw new \Error('No se pudo crear el attachment.');
-            }
-
-            // Crea el mensaje y lo asocia a la conversacion
-            $message = Message::create([
-                'sender_id' => $user->id,
-                'receiver_id' => (int) $campos['receiver_id'],
-                'conversation_id' => $conversation->id,
-                'message_type' => get_class($file_message),
-                'message_id' => $file_message->id
-            ]);
-
-            if (!$message) {
-                throw new \Error('No se pudo crear el mensaje.');
-            }
-
             Conversation::where('id',$conversation->id)
                          ->update(['updated_at' => now()]);
 
             DB::commit();
 
             //Se lanza evento de Nuevo Mensaje
-            broadcast(new NewMessage($message));
+            //broadcast(new NewMessage($message));
 
             return response()->json([
                 'status' => 200,
                 'message' => 'Creación del mensaje de FILE realizada con éxito',
                 'conversation_id' => $message->conversation_id,
-                'message_id' => $message->id,
                 "sender_id" => $message->sender_id,
-                "receiver_id" => $message->receiver_id,
-                "read_at" => $message->read_at,
-                'message_created' => $message->message
+                //'message_created' => $message->message
             ]);
 
         }
@@ -596,45 +680,90 @@ class MessagesController extends Controller
             // ], $code);
             return response()->json(['errors' => $e->getMessage()], 400);
 
-
         }
     }
     public function createPositionMessage(Request $request)
     {
-        $user = Auth::user();
+        //$user = Auth::user();
 
         DB::beginTransaction();
         try {
 
             //Chequea los campos de entrada
             $campos = $request->validate([
+                'user_id' => ['required','integer', 'exists:users,id'],
+                'contact_type' => ['required', Rule::in(['INDIVIDUAL', 'GROUP'])],
+                'contact_id' => ['required','integer'],
                 'lat' => ['required','numeric'],
                 'lon' => ['required','numeric'],
                 'alt' => ['required','numeric'],
-                'receiver_id' => ['required','integer','exists:users,id']
             ]);
 
-            if ($user->id == $campos['receiver_id']) {
-                throw new AccessDeniedHttpException(__('No se puede enviar mensaje al usuario destino.'));
+            $user = User::find($campos['user_id']);
+            if ($user == null) {
+                throw new AccessDeniedHttpException(__('No existe el usuario.'));
             }
-            $conversation = Conversation::where(function($q) use ($user, $campos){
-                                            $q->where('user_id_1', $user->id);
-                                            $q->where('user_id_2', $campos['receiver_id']);
-                                        })
-                                        ->orWhere(function($q) use ($user, $campos){
-                                            $q->where('user_id_2', $user->id);
-                                            $q->where('user_id_1', $campos['receiver_id']);
-                                        })
-                                        ->first();
 
-            if (!$conversation){ //La conversacion NO existe, se crea antes del mensaje
-                $conversation = Conversation::create([
-                    'user_id_1' => $user->id,
-                    'user_id_2' => $campos['receiver_id'],
-                    ]);
+            //Según tipo de contact_type, chequea que exista el usuario o grupo destino (contact_id) como contacto del usuario logueado
 
-                if (!$conversation) {
-                   throw new \Error('No se pudo crear la conversación.');
+            if($campos['contact_type'] == "INDIVIDUAL"){
+                $contact_dest = UserContact::where('user_id',$campos['user_id'])
+                                            ->where('contact_type', "App\\User")
+                                            ->where('contact_id', $campos['contact_id'])
+                                            ->first();
+
+                if (!$contact_dest) {
+                    throw new AccessDeniedHttpException(__('El usuario a quien se quiere enviar el mensaje, NO es un contacto válido.'));
+                }
+
+                //Si está OK el contact_dest -> se busca la conversación y sino se la crea
+                $conversation = Conversation::where('type', 'INDIVIDUAL')
+                                            ->where(function($q) use ($user, $campos){
+                                                $q->where('user_id_1', $user->id);
+                                                $q->where('user_id_2', $campos['contact_id']);
+                                            })
+                                            ->orWhere(function($q) use ($user, $campos){
+                                                $q->where('user_id_2', $user->id);
+                                                $q->where('user_id_1', $campos['contact_id']);
+                                            })
+                                            ->first();
+
+                if (!$conversation){ //La conversacion NO existe, se crea antes del mensaje
+                    $conversation = Conversation::create([
+                        'type' => 'INDIVIDUAL',
+                        'user_id_1' => $user->id,
+                        'user_id_2' => $campos['contact_id'],
+                        ]);
+
+                    if (!$conversation) {
+                       throw new \Error('No se pudo crear la conversación.');
+                    }
+                }
+
+            }else{
+                $contact_dest = UserContact::where('user_id',$campos['user_id'])
+                                            ->where('contact_type', "App\\Models\\Group")
+                                            ->where('contact_id', $campos['contact_id'])
+                                            ->first();
+
+                if (!$contact_dest) {
+                    throw new AccessDeniedHttpException(__('El usuario NO pertenece grupo al que se quiere enviar el mensaje.'));
+                }
+
+                //Si está OK el contact_dest -> se busca la conversación y sino se la crea
+                $conversation = Conversation::where('type', 'GROUP')
+                                            ->where('group_id', $campos['contact_id'])
+                                            ->first();
+
+                if (!$conversation){ //La conversacion NO existe, se crea antes del mensaje
+                    $conversation = Conversation::create([
+                        'type' => 'GROUP',
+                        'group_id' => $campos['contact_id'],
+                        ]);
+
+                    if (!$conversation) {
+                       throw new \Error('No se pudo crear la conversación.');
+                    }
                 }
             }
 
@@ -652,7 +781,6 @@ class MessagesController extends Controller
             // Crea el mensaje y lo asocia a la conversacion
             $message = Message::create([
                 'sender_id' => $user->id,
-                'receiver_id' => (int) $campos['receiver_id'],
                 'conversation_id' => $conversation->id,
                 'message_type' => get_class($position_message),
                 'message_id' => $position_message->id,
@@ -668,16 +796,13 @@ class MessagesController extends Controller
             DB::commit();
 
             //Se lanza evento de Nuevo Mensaje
-            broadcast(new NewMessage($message));
+            //broadcast(new NewMessage($message));
 
             return response()->json([
                 'status' => 200,
                 'message' => 'Creación del mensaje de POSICIÓN realizada con éxito',
                 'conversation_id' => $message->conversation_id,
-                'message_id' => $message->id,
                 "sender_id" => $message->sender_id,
-                "receiver_id" => $message->receiver_id,
-                "read_at" => $message->read_at,
                 'message_created' => $message->message
             ]);
 
