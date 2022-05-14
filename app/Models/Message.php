@@ -15,6 +15,10 @@ class Message extends Model
         'message_id',
     ];
 
+    protected $appends = [
+        'display_type'
+    ];
+
     protected $with = [
         'message',
     ];
@@ -40,5 +44,17 @@ class Message extends Model
     public function message_visualizations()
     {
         return $this->hasMany('App\Models\MessageVisualization')->orderBy('created_at','desc');
+    }
+
+    public function getDisplayTypeAttribute() {
+
+        if($this->message_type == "App\\Models\\TextMessage"){
+            return "TextMessage";
+        }else if($this->message_type == "App\\Models\\FileMessage"){
+            return "FileMessage";
+        }else if($this->message_type == "App\\Models\\PositionMessage"){
+            return "PositionMessage";
+        }
+
     }
 }
