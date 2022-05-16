@@ -56,6 +56,7 @@ class MessagesController extends Controller
 
             foreach ($userContacts as $userContact) {
 
+                //var_dump("Contact TYPE: " .$userContact->contact_type);
                 if ($userContact->contact_type == "App\\User") {
                     //var_dump("USER_CONTACT_IND: " . $userContact);
                     $userContactsUserIds[$i] = $userContact['contact_id'];
@@ -486,8 +487,7 @@ class MessagesController extends Controller
             $request->all(),
             [
                 'user_id' => ['required','integer', 'exists:users,id'],
-                'contact_type' => ['required', Rule::in(['INDIVIDUAL', 'GROUP'])],
-                'contact_id' => ['required','integer'],
+                'conversation_id' => ['required','integer'],
                 'file' => ['required', 'array'],
                 'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
                 'description' => ['sometimes', 'array'],
@@ -513,6 +513,37 @@ class MessagesController extends Controller
             $user = User::find($campos['user_id']);
             if ($user == null) {
                 throw new AccessDeniedHttpException(__('No existe el usuario.'));
+            }
+
+            //Se busca a qué grupos pertenece el usuario logueado
+            $userGroups = UserContact::where('user_id',$campos['user_id'])
+                                    ->where('contact_type', "App\\Models\\Group")
+                                    ->get();
+
+            foreach($userGroups as $b => $userGroup){
+                $user_groups[$b] = $userGroup['contact_id'];
+            }
+
+
+            $conversation = Conversation::where(function($q) use ($user, $campos){
+                                                    $q->where('id', $campos['conversation_id']);
+                                                    $q->where('user_id_1', $user->id);
+                                                    $q->where('user_id_2', $campos['conversation_id']);
+                                            })
+                                            ->orWhere(function($q) use ($user, $campos){
+                                                    $q->where('id', $campos['conversation_id']);
+                                                    $q->where('user_id_2', $user->id);
+                                                    $q->where('user_id_1', $campos['conversation_id']);
+                                            })
+
+                                            ->orWhere(function($q) use ($user_groups, $campos){
+                                                $q->where('id', $campos['conversation_id']);
+                                                $q->whereIn('group_id', $user_groups);
+                                            })
+                                            ->first();
+
+            if (!$conversation) {
+                throw new AccessDeniedHttpException(__('El usuario no forma parte de la conversación a la que desea enviar el mensaje.'));
             }
 
              //Según tipo de contact_type, chequea que exista el usuario o grupo destino (contact_id) como contacto del usuario logueado
