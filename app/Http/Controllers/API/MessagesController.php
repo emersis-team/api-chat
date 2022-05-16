@@ -90,11 +90,9 @@ class MessagesController extends Controller
             $g = 0;
 
             foreach ($active_conversations as $x => $conversation) {
-                //var_dump("Entró a Active Conversations");
                 //$contact_dest= array();
 
                 $conversation_members = array();
-
 
                 //Identifico el usuario o grupo DESTINO de la conversacion
                 if ($active_conversations[$x]->user_id_1 != null && $active_conversations[$x]->user_id_1 != $user_id) {
@@ -104,12 +102,6 @@ class MessagesController extends Controller
                     $conversation_members[0]['name'] = $active_conversations[$x]->user_1->name;
                     $conversation_name = NULL;
 
-                    // $contact_dest = [
-                    //     'type' => "INDIVIDUAL",
-                    //     "id" => $active_conversations[$x]->user_id_1,
-                    //     "name" => $active_conversations[$x]->user_1->name,
-                    //     "name" => NULL,
-                    // ];
                     $active_users[$i] = $active_conversations[$x]->user_id_1;
 
                     $last_visualizations = UserContact::where('user_id', $user_id)
@@ -134,12 +126,6 @@ class MessagesController extends Controller
                     $conversation_members[0]['name'] = $active_conversations[$x]->user_2->name;
                     $conversation_name = NULL;
 
-                    // $contact_dest = [
-                    //     'type' => "INDIVIDUAL",
-                    //     "id" => $active_conversations[$x]->user_id_2,
-                    //     "name" => $active_conversations[$x]->user_2->name,
-                    //     "name" => NULL,
-                    // ];
                     $active_users[$i] = $active_conversations[$x]->user_id_2;
 
                     $last_visualizations = UserContact::where('user_id', $user_id)
@@ -163,7 +149,6 @@ class MessagesController extends Controller
                     $ammount_messages_no_read = 0;
 
                     //Se arma un array con los miembros del grupo
-
                     $group_members = UserContact::select(["user_id","last_read_at"])
                                                     ->where('contact_type',"App\\Models\\Group")
                                                     ->where('contact_id', $active_conversations[$x]->group_id)
@@ -180,26 +165,7 @@ class MessagesController extends Controller
                         }
                     }
 
-                    // $contact_dest = [
-                    //     'type' => "GROUP",
-                    //     "id" => $active_conversations[$x]->group_id,
-                    //     "name" => $active_conversations[$x]->group->name,
-                    // ];
                     $active_groups[$g] = $active_conversations[$x]->group_id;
-
-                    // $last_visualizations = UserContact::where('user_id', $user_id)
-                    //                                 ->where('contact_type',"App\\Models\\Group")
-                    //                                 ->where('contact_id', $active_groups[$g])
-                    //                                 ->get("last_read_at");
-
-                    // foreach($last_visualizations as $last_visualization){
-                    //     //var_dump("LAST visualizacion: " . $last_visualization['last_read_at']);
-
-                    //     $ammount_messages_no_read = count($conversation->messages->where('sender_id', '<>', $user_id)
-                    //                                                              ->where('created_at', '>', $last_visualization['last_read_at']));
-
-                    //     //var_dump("Cant de mjes sin leer para la conversación " .$conversation->id . ": " . $ammount_messages_no_read);
-                    // }
 
                     $g++;
                 }
@@ -224,47 +190,6 @@ class MessagesController extends Controller
                 $x++;
             }
 
-            $inactive_users = User::whereNotIn('id', $active_users)
-                        ->whereIn('id', $userContactsUserIds)
-                        ->orderBy('name', 'asc')
-                        ->get();
-
-
-            $inactive_groups = Group::whereNotIn('id', $active_groups)
-                        ->whereIn('id', $userContacsGroupIds)
-                        ->orderBy('name', 'asc')
-                        ->get();
-
-            foreach ($inactive_users as $inactive_user) {
-                //Identifico el usuario DESTINO de la conversacion
-                $contact_dest = [
-                "type" => "INDIVIDUAL",
-                "id" => $inactive_user->id,
-                "name" => $inactive_user->name,
-            ];
-
-                $conversations[$x]['conversation_id']= 0;
-                $conversations[$x]['contact_dest']= $contact_dest;
-                $conversations[$x]['ammount_no_read']= 0;
-
-                $x++;
-            }
-
-            foreach ($inactive_groups as $inactive_group) {
-                //Identifico el grupo DESTINO de la conversacion
-                $contact_dest = [
-                "type" => "GROUP",
-                "id" => $inactive_group->id,
-                "name" => $inactive_group->name,
-            ];
-
-                $conversations[$x]['conversation_id']= 0;
-                $conversations[$x]['contact_dest']= $contact_dest;
-                $conversations[$x]['ammount_no_read']= 0;
-
-                $x++;
-            }
-
             return response()->json([
                 'user_origin' => $user_id,
                 'conversations' => $conversations,
@@ -284,6 +209,7 @@ class MessagesController extends Controller
             ], $code);
         }
     }
+
     public function getMessagesFromConversation($user_id, $conversation_id)
     {
         //Se envía el id de la conversación por $conversation_id porque puede enviarse id=0 y sino rebotaría porque no existe en la BD
