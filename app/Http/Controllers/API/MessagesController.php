@@ -318,6 +318,8 @@ class MessagesController extends Controller
         DB::beginTransaction();
         try {
 
+            var_dump("HOLA");
+            
             //Chequea los campos de entrada
             $campos = $request->validate([
                 'user_id' => ['required','integer', 'exists:users,id'],
@@ -326,6 +328,8 @@ class MessagesController extends Controller
             ]);
 
             $user = User::find($campos['user_id']);
+            //var_dump($user);
+
             if ($user == null) {
                 throw new AccessDeniedHttpException(__('No existe el usuario.'));
             }
@@ -343,12 +347,10 @@ class MessagesController extends Controller
             $conversation = Conversation::where(function($q) use ($user, $campos){
                                                     $q->where('id', $campos['conversation_id']);
                                                     $q->where('user_id_1', $user->id);
-                                                    $q->where('user_id_2', $campos['conversation_id']);
                                             })
                                             ->orWhere(function($q) use ($user, $campos){
                                                     $q->where('id', $campos['conversation_id']);
                                                     $q->where('user_id_2', $user->id);
-                                                    $q->where('user_id_1', $campos['conversation_id']);
                                             })
 
                                             ->orWhere(function($q) use ($user_groups, $campos){
@@ -528,12 +530,10 @@ class MessagesController extends Controller
             $conversation = Conversation::where(function($q) use ($user, $campos){
                                                     $q->where('id', $campos['conversation_id']);
                                                     $q->where('user_id_1', $user->id);
-                                                    $q->where('user_id_2', $campos['conversation_id']);
                                             })
                                             ->orWhere(function($q) use ($user, $campos){
                                                     $q->where('id', $campos['conversation_id']);
                                                     $q->where('user_id_2', $user->id);
-                                                    $q->where('user_id_1', $campos['conversation_id']);
                                             })
 
                                             ->orWhere(function($q) use ($user_groups, $campos){
@@ -744,12 +744,10 @@ class MessagesController extends Controller
             $conversation = Conversation::where(function($q) use ($user, $campos){
                                                     $q->where('id', $campos['conversation_id']);
                                                     $q->where('user_id_1', $user->id);
-                                                    $q->where('user_id_2', $campos['conversation_id']);
                                             })
                                             ->orWhere(function($q) use ($user, $campos){
                                                     $q->where('id', $campos['conversation_id']);
                                                     $q->where('user_id_2', $user->id);
-                                                    $q->where('user_id_1', $campos['conversation_id']);
                                             })
 
                                             ->orWhere(function($q) use ($user_groups, $campos){
