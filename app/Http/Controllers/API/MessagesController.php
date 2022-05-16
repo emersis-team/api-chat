@@ -431,7 +431,7 @@ class MessagesController extends Controller
                                             ->first();
 
             if (!$conversation) {
-                throw new AccessDeniedHttpException(__('El grupo o usuario al que se quiere enviar el mensaje, NO es un contacto válido.'));
+                throw new AccessDeniedHttpException(__('El usuario no forma parte de la conversación a la que desea enviar el mensaje.'));
             }
 
              //Según tipo de contact_type, chequea que exista el usuario o grupo destino (contact_id) como contacto del usuario logueado
