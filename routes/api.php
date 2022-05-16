@@ -55,7 +55,7 @@ use Illuminate\Support\Facades\Route;
         Route::get('/{user_id}/conversations', 'MessagesController@getConversations');
         Route::get('/{user_id}/conversations/{conversation_id}', 'MessagesController@getMessagesFromConversation');
         Route::post('/textMessage', 'MessagesController@createTextMessage');
-        // Route::post('/{user_id}/fileMessage', 'MessagesController@createFileMessage');
+        Route::post('/fileMessage', 'MessagesController@createFileMessage');
         Route::post('/positionMessage', 'MessagesController@createPositionMessage');
 
  });;

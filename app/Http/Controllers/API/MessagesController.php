@@ -317,9 +317,6 @@ class MessagesController extends Controller
 
         DB::beginTransaction();
         try {
-
-            var_dump("HOLA");
-            
             //Chequea los campos de entrada
             $campos = $request->validate([
                 'user_id' => ['required','integer', 'exists:users,id'],
@@ -548,66 +545,7 @@ class MessagesController extends Controller
 
              //Según tipo de contact_type, chequea que exista el usuario o grupo destino (contact_id) como contacto del usuario logueado
 
-             if($campos['contact_type'] == "INDIVIDUAL"){
-                $contact_dest = UserContact::where('user_id',$campos['user_id'])
-                                            ->where('contact_type', "App\\User")
-                                            ->where('contact_id', $campos['contact_id'])
-                                            ->first();
-
-                if (!$contact_dest) {
-                    throw new AccessDeniedHttpException(__('El usuario a quien se quiere enviar el mensaje, NO es un contacto válido.'));
-                }
-
-                //Si está OK el contact_dest -> se busca la conversación y sino se la crea
-                $conversation = Conversation::where('type', 'INDIVIDUAL')
-                                            ->where(function($q) use ($user, $campos){
-                                                $q->where('user_id_1', $user->id);
-                                                $q->where('user_id_2', $campos['contact_id']);
-                                            })
-                                            ->orWhere(function($q) use ($user, $campos){
-                                                $q->where('user_id_2', $user->id);
-                                                $q->where('user_id_1', $campos['contact_id']);
-                                            })
-                                            ->first();
-
-                if (!$conversation){ //La conversacion NO existe, se crea antes del mensaje
-                    $conversation = Conversation::create([
-                        'type' => 'INDIVIDUAL',
-                        'user_id_1' => $user->id,
-                        'user_id_2' => $campos['contact_id'],
-                        ]);
-
-                    if (!$conversation) {
-                       throw new \Error('No se pudo crear la conversación.');
-                    }
-                }
-
-             }else{
-                $contact_dest = UserContact::where('user_id',$campos['user_id'])
-                                            ->where('contact_type', "App\\Models\\Group")
-                                            ->where('contact_id', $campos['contact_id'])
-                                            ->first();
-
-                if (!$contact_dest) {
-                    throw new AccessDeniedHttpException(__('El usuario NO pertenece grupo al que se quiere enviar el mensaje.'));
-                }
-
-                //Si está OK el contact_dest -> se busca la conversación y sino se la crea
-                $conversation = Conversation::where('type', 'GROUP')
-                                            ->where('group_id', $campos['contact_id'])
-                                            ->first();
-
-                if (!$conversation){ //La conversacion NO existe, se crea antes del mensaje
-                    $conversation = Conversation::create([
-                        'type' => 'GROUP',
-                        'group_id' => $campos['contact_id'],
-                        ]);
-
-                    if (!$conversation) {
-                       throw new \Error('No se pudo crear la conversación.');
-                    }
-                }
-             }
+            $messages_created = array();
 
             foreach ($request->file('file') as $index => $file) {
                 $original_filename = $file->getClientOriginalName();
@@ -647,6 +585,10 @@ class MessagesController extends Controller
                     throw new \Error('No se pudo crear el file_message.');
                 }
 
+                $messages_created[$index]['file'] = 'files/' . $filename;
+                $messages_created[$index]['original_file'] = $original_filename;
+                $messages_created[$index]['description'] = isset($campos['description'][$index]) ? $campos['description'][$index] : $file->getClientOriginalName();
+
                 // Crea el mensaje y lo asocia a la conversacion
                 $message = Message::create([
                     'sender_id' => $user->id,
@@ -669,10 +611,10 @@ class MessagesController extends Controller
 
             return response()->json([
                 'status' => 200,
-                'message' => 'Creación del mensaje de FILE realizada con éxito',
+                'message' => 'Creación de mensaje de tipo FILE realizada con éxito',
                 'conversation_id' => $message->conversation_id,
                 "sender_id" => $message->sender_id,
-                //'message_created' => $message->message
+                'message_created' => $messages_created
             ]);
 
         }
