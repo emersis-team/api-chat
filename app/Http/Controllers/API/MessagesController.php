@@ -228,7 +228,6 @@ class MessagesController extends Controller
                 throw new AccessDeniedHttpException(__('No existe el usuario.'));
             }
 
-            if ($conversation_id > 0) {
                 //Chequea que exista la conversacion
                 $conversation = Conversation::where('id',$conversation_id)
                                             ->first();
@@ -282,11 +281,6 @@ class MessagesController extends Controller
 
                 //TODO - ANALIZAR si se insertará visualización en la tabla message_visualizations
 
-            }else{
-                $messages = Message::select(['conversation_id','sender_id','sender_id','message_type','message_id','created_at'])
-                                    ->where('conversation_id', 0)
-                                    ->paginate(10);
-            }
 
             //TODO - Devolución de la info necesaria, eliminar los datos NO necesarios
             return response()->json([
