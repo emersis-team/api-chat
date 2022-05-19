@@ -314,7 +314,7 @@ class MessagesController extends Controller
             //Chequea los campos de entrada
             $campos = $request->validate([
                 'user_id' => ['required','integer', 'exists:users,id'],
-                'conversation_id' => ['required','integer'],
+                'conversation_id' => ['required','integer', 'exists:conversations,id'],
                 'message' => ['required','string', 'max:255'],
             ]);
 
@@ -480,7 +480,7 @@ class MessagesController extends Controller
             $request->all(),
             [
                 'user_id' => ['required','integer', 'exists:users,id'],
-                'conversation_id' => ['required','integer'],
+                'conversation_id' => ['required','integer', 'exists:conversations,id'],
                 'file' => ['required', 'array'],
                 'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
                 'description' => ['sometimes', 'array'],
@@ -656,7 +656,7 @@ class MessagesController extends Controller
             //Chequea los campos de entrada
             $campos = $request->validate([
                 'user_id' => ['required','integer', 'exists:users,id'],
-                'conversation_id' => ['required','integer'],
+                'conversation_id' => ['required','integer', 'exists:conversations,id'],
                 'lat' => ['required','numeric'],
                 'lon' => ['required','numeric'],
                 'alt' => ['required','numeric'],
