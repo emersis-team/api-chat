@@ -159,10 +159,16 @@ class MessagesController extends Controller
                         $conversation_members[$a]['user_id'] = $group_member['user_id'];
                         $conversation_members[$a]['last_read_at'] = $group_member['last_read_at'];
 
-                        if($group_member['id'] == $user_id){
+                        if($group_member['user_id'] == $user_id){
+
                             //Se calcula los mensajes no leidos por el usuario logueado de esa conversación
-                            $ammount_messages_no_read = count($conversation->messages->where('sender_id', '<>', $user_id)
-                                                        ->where('created_at', '>', $group_member['last_read_at']));
+                            if($group_member['last_read_at'] <> NULL){
+                                $ammount_messages_no_read = count($conversation->messages->where('sender_id', '<>', $user_id)
+                                ->where('created_at', '>', $group_member['last_read_at']));
+                            }else{
+                                $ammount_messages_no_read = count($conversation->messages->where('sender_id', '<>', $user_id));
+                            }
+                            
                         }
                     }
 
