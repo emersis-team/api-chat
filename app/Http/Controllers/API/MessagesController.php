@@ -487,8 +487,9 @@ class MessagesController extends Controller
             [
                 'user_id' => ['required','integer', 'exists:users,id'],
                 'conversation_id' => ['required','integer', 'exists:conversations,id'],
-                'file' => ['required', 'array'],
+                //'file' => ['required', 'array'],
                 'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
+                'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
                 'description' => ['sometimes', 'array'],
                 'description.*' => ['nullable', 'string'],
             ],[
@@ -502,6 +503,46 @@ class MessagesController extends Controller
                 'errors' => $validator->errors(),
             ], 422);
         }
+
+
+        // $validator = Validator::make(
+        //     $request->all(),
+        //     [
+        //         'user_id' => ['required','integer', 'exists:users,id'],
+        //         'conversation_id' => ['required','integer', 'exists:conversations,id'],
+        //     ]
+        // );
+
+        // if ($validator->fails()) {
+        //     return response()->json([
+        //         'errors' => $validator->errors(),
+        //     ], 422);
+        // }
+
+        // $validatorFiles = Validator::make(
+        //     $request->all(),
+        //     [
+        //         'file' => ['required', 'array'],
+        //         //'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
+        //         'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
+        //         'description' => ['sometimes', 'array'],
+        //         'description.*' => ['nullable', 'string'],
+        //     ],[
+        //         'file.*.mimes' => __('Los archivos sólo pueden ser doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a'),
+        //         'file.*.max' => __('Cada archivo no puede ser mayor a 10MB'),
+        //     ]
+        // );
+
+        // if ($validatorFiles->fails()) {
+
+        //     // TODO - Lo que hay que hacer es un array con los files que tiene error con el mje para luego mostrarlos y los archivos que están OK se deben crear como mjes
+        //     $errors = $validatorFiles->errors();
+        //     var_dump("HAY algún error:" . $errors);
+            
+        //     foreach ($errors->all() as $error) {
+        //         var_dump("ERROR: " . $error);
+        //     }
+        // }
 
         DB::beginTransaction();
 
