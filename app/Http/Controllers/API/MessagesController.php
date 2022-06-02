@@ -168,7 +168,7 @@ class MessagesController extends Controller
                             }else{
                                 $ammount_messages_no_read = count($conversation->messages->where('sender_id', '<>', $user_id));
                             }
-                            
+
                         }
                     }
 
@@ -482,34 +482,19 @@ class MessagesController extends Controller
 
         $files = array();
 
-        $validator = Validator::make(
-            $request->all(),
-            [
-                'user_id' => ['required','integer', 'exists:users,id'],
-                'conversation_id' => ['required','integer', 'exists:conversations,id'],
-                //'file' => ['required', 'array'],
-                'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
-                'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
-                'description' => ['sometimes', 'array'],
-                'description.*' => ['nullable', 'string'],
-            ],[
-                'file.*.mimes' => __('Los archivos sólo pueden ser doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a'),
-                'file.*.max' => __('Cada archivo no puede ser mayor a 10MB'),
-            ]
-        );
-
-        if ($validator->fails()) {
-            return response()->json([
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-
         // $validator = Validator::make(
         //     $request->all(),
         //     [
         //         'user_id' => ['required','integer', 'exists:users,id'],
         //         'conversation_id' => ['required','integer', 'exists:conversations,id'],
+        //         'file' => ['required', 'array'],
+        //         'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
+        //         //'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
+        //         'description' => ['sometimes', 'array'],
+        //         'description.*' => ['nullable', 'string'],
+        //     ],[
+        //         'file.*.mimes' => __('Los archivos sólo pueden ser doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a'),
+        //         'file.*.max' => __('Cada archivo no puede ser mayor a 10MB'),
         //     ]
         // );
 
@@ -519,30 +504,79 @@ class MessagesController extends Controller
         //     ], 422);
         // }
 
-        // $validatorFiles = Validator::make(
-        //     $request->all(),
-        //     [
-        //         'file' => ['required', 'array'],
-        //         //'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
-        //         'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
-        //         'description' => ['sometimes', 'array'],
-        //         'description.*' => ['nullable', 'string'],
-        //     ],[
-        //         'file.*.mimes' => __('Los archivos sólo pueden ser doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a'),
-        //         'file.*.max' => __('Cada archivo no puede ser mayor a 10MB'),
-        //     ]
-        // );
 
-        // if ($validatorFiles->fails()) {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'user_id' => ['required','integer', 'exists:users,id'],
+                'conversation_id' => ['required','integer', 'exists:conversations,id'],
+                'file' => ['required', 'array'],
+            ]
+        );
 
-        //     // TODO - Lo que hay que hacer es un array con los files que tiene error con el mje para luego mostrarlos y los archivos que están OK se deben crear como mjes
-        //     $errors = $validatorFiles->errors();
-        //     var_dump("HAY algún error:" . $errors);
-            
-        //     foreach ($errors->all() as $error) {
-        //         var_dump("ERROR: " . $error);
-        //     }
-        // }
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $validatorFiles = Validator::make(
+            $request->all(),
+            [
+                //'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
+                'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
+                'description' => ['sometimes', 'array'],
+                'description.*' => ['nullable', 'string'],
+            ],[
+                'file.*.mimes' => __('Los archivos sólo pueden ser doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a'),
+                'file.*.max' => __('Cada archivo no puede ser mayor a 10MB'),
+            ]
+        );
+
+        $countSentFiles = count($request->file);
+        var_dump("Cant de files:" . $countSentFiles);
+
+        $j = 0; //índice para array de archivos con error
+        $h = 0; //índice para array de archivos OK
+        $filesWhithError = array();
+        $filesOK = array();
+
+        if ($validatorFiles->fails()) {
+
+            // Se crea un array con los files que tiene error con el mje para luego mostrarlos y los archivos que están OK se deben crear como mjes
+            $errors = $validatorFiles->errors();
+
+            //Leo el JSON con la info de los archivos con error
+            $errorFiles = json_decode($errors, true);
+
+            //var_dump("HAY algún error:" . $errors);
+
+            for($i = 0; $i < $countSentFiles; $i++){
+                if (isset($errorFiles["file." . $i])) {
+                    $filename = $request->file[$i]->getClientOriginalName();
+
+                    $filesWhithError[$j]['index']= $i;
+                    $filesWhithError[$j]['original_file']= $filename;
+                    $filesWhithError[$j]['text_error']= $errorFiles["file." . $i][0];
+
+                    //var_dump("file.". $i . " SÍ tiene error:" . $filename);
+                    //var_dump($errorFiles["file." . $i][0]);
+
+                    $j++;
+                }else{
+                    $filesOK[$h]['index']= $i;
+                    $h++;
+                }
+            }
+        }
+
+        if($j > 0 && $h == 0){ //Hay archivos con error y ninguno OK
+            return response()->json([
+                'status' => 500,
+                'message' => 'No se pudo crear el mensaje.',
+                'messages_with_error' => $filesWhithError
+            ]);
+        }
 
         DB::beginTransaction();
 
@@ -589,57 +623,59 @@ class MessagesController extends Controller
             $messages_created = array();
 
             foreach ($request->file('file') as $index => $file) {
-                $original_filename = $file->getClientOriginalName();
 
-                $name = explode('.', $original_filename);
-                $cant = count($name);
+                if (!isset($errorFiles["file." . $index])) {
+                    $original_filename = $file->getClientOriginalName();
 
-                $filename  = "";
+                    $name = explode('.', $original_filename);
+                    $cant = count($name);
 
-                //Concateno si hubieran varios . sólo me interesa separar el último
-                for ($i=0;$i<=$cant-2;$i++) {
-                    if ($i!=0) {
-                        $filename  = $filename . '.';
+                    $filename  = "";
+
+                    //Concateno si hubieran varios . sólo me interesa separar el último
+                    for ($i=0;$i<=$cant-2;$i++) {
+                        if ($i!=0) {
+                            $filename  = $filename . '.';
+                        }
+                        $filename  = $filename . $name[$i];
                     }
-                    $filename  = $filename . $name[$i];
-                }
 
-                //$filename  = $name[0] .'_' . time() . '.' . $name[1];
-                $filename  = $filename .'_' . time() . '.' . $name[$cant-1];
+                    $filename  = $filename .'_' . $index . '_' . time() . '.' . $name[$cant-1];
 
-                $file->storeAs('public/files', $filename);
+                    $file->storeAs('public/files', $filename);
 
-                $files[] = [
-                    'file' => 'files/' . $filename,
-                    'original_file' => $original_filename,
-                    'description' => isset($campos['description'][$index]) ? $campos['description'][$index] : $file->getClientOriginalName(),
-                ];
+                    $files[] = [
+                        'file' => 'files/' . $filename,
+                        'original_file' => $original_filename,
+                        'description' => isset($campos['description'][$index]) ? $campos['description'][$index] : $file->getClientOriginalName(),
+                    ];
 
-                //Crea el mje de file
-                $file_message = FileMessage::create([
-                    'file' => 'files/' . $filename,
-                    'original_file' => $original_filename,
-                    'description' => isset($campos['description'][$index]) ? $campos['description'][$index] : $file->getClientOriginalName(),
-                ]);
+                    //Crea el mje de file
+                    $file_message = FileMessage::create([
+                        'file' => 'files/' . $filename,
+                        'original_file' => $original_filename,
+                        'description' => isset($campos['description'][$index]) ? $campos['description'][$index] : $file->getClientOriginalName(),
+                    ]);
 
-                if (!$file_message) {
-                    throw new \Error('No se pudo crear el file_message.');
-                }
+                    if (!$file_message) {
+                        throw new \Error('No se pudo crear el file_message.');
+                    }
 
-                $messages_created[$index]['file'] = 'files/' . $filename;
-                $messages_created[$index]['original_file'] = $original_filename;
-                $messages_created[$index]['description'] = isset($campos['description'][$index]) ? $campos['description'][$index] : $file->getClientOriginalName();
+                    $messages_created[$index]['file'] = 'files/' . $filename;
+                    $messages_created[$index]['original_file'] = $original_filename;
+                    $messages_created[$index]['description'] = isset($campos['description'][$index]) ? $campos['description'][$index] : $file->getClientOriginalName();
 
-                // Crea el mensaje y lo asocia a la conversacion
-                $message = Message::create([
-                    'sender_id' => $user->id,
-                    'conversation_id' => $conversation->id,
-                    'message_type' => get_class($file_message),
-                    'message_id' => $file_message->id
-                ]);
+                    // Crea el mensaje y lo asocia a la conversacion
+                    $message = Message::create([
+                        'sender_id' => $user->id,
+                        'conversation_id' => $conversation->id,
+                        'message_type' => get_class($file_message),
+                        'message_id' => $file_message->id
+                    ]);
 
-                if (!$message) {
-                    throw new \Error('No se pudo crear el mensaje.');
+                    if (!$message) {
+                        throw new \Error('No se pudo crear el mensaje.');
+                    }
                 }
             }
             Conversation::where('id',$conversation->id)
@@ -650,13 +686,25 @@ class MessagesController extends Controller
             //Se lanza evento de Nuevo Mensaje
             //broadcast(new NewMessage($message));
 
-            return response()->json([
-                'status' => 200,
-                'message' => 'Creación de mensaje de tipo FILE realizada con éxito',
-                'conversation_id' => $message->conversation_id,
-                "sender_id" => $message->sender_id,
-                'message_created' => $messages_created
-            ]);
+            if($j > 0 && $h > 0){ //Hay archivos con error y otros OK
+                return response()->json([
+                    'status' => 200,
+                    'message' => 'Creación de mensaje de tipo FILE realizada con éxito',
+                    'conversation_id' => $message->conversation_id,
+                    "sender_id" => $message->sender_id,
+                    'message_created' => $messages_created,
+                    'messages_with_error' => $filesWhithError
+                ]);
+            }else{
+                return response()->json([
+                    'status' => 200,
+                    'message' => 'Creación de mensaje de tipo FILE realizada con éxito',
+                    'conversation_id' => $message->conversation_id,
+                    "sender_id" => $message->sender_id,
+                    'message_created' => $messages_created,
+                ]);
+            }
+
 
         }
 
