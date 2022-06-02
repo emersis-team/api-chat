@@ -482,28 +482,6 @@ class MessagesController extends Controller
 
         $files = array();
 
-        // $validator = Validator::make(
-        //     $request->all(),
-        //     [
-        //         'user_id' => ['required','integer', 'exists:users,id'],
-        //         'conversation_id' => ['required','integer', 'exists:conversations,id'],
-        //         'file' => ['required', 'array'],
-        //         'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
-        //         //'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
-        //         'description' => ['sometimes', 'array'],
-        //         'description.*' => ['nullable', 'string'],
-        //     ],[
-        //         'file.*.mimes' => __('Los archivos sólo pueden ser doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a'),
-        //         'file.*.max' => __('Cada archivo no puede ser mayor a 10MB'),
-        //     ]
-        // );
-
-        // if ($validator->fails()) {
-        //     return response()->json([
-        //         'errors' => $validator->errors(),
-        //     ], 422);
-        // }
-
 
         $validator = Validator::make(
             $request->all(),
@@ -523,8 +501,8 @@ class MessagesController extends Controller
         $validatorFiles = Validator::make(
             $request->all(),
             [
-                //'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
-                'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
+                'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
+                //'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
                 'description' => ['sometimes', 'array'],
                 'description.*' => ['nullable', 'string'],
             ],[
@@ -533,8 +511,10 @@ class MessagesController extends Controller
             ]
         );
 
-        $countSentFiles = count($request->file);
-        var_dump("Cant de files:" . $countSentFiles);
+        //$countSentFiles = count($request->file);
+        //$countErrorFiles = count($validatorFiles->errors());
+        //var_dump("Cant TOTAL de files enviados:" . $countSentFiles);
+        //var_dump("Cant de files con ERROR:" . $countErrorFiles);
 
         $j = 0; //índice para array de archivos con error
         $h = 0; //índice para array de archivos OK
@@ -542,17 +522,15 @@ class MessagesController extends Controller
         $filesOK = array();
 
         if ($validatorFiles->fails()) {
-
             // Se crea un array con los files que tiene error con el mje para luego mostrarlos y los archivos que están OK se deben crear como mjes
             $errors = $validatorFiles->errors();
 
             //Leo el JSON con la info de los archivos con error
             $errorFiles = json_decode($errors, true);
 
-            //var_dump("HAY algún error:" . $errors);
-
-            for($i = 0; $i < $countSentFiles; $i++){
+            foreach ($request->file('file') as $i => $file) {
                 if (isset($errorFiles["file." . $i])) {
+                    //var_dump("ENTRO a ERROR y el I es: " . $i);
                     $filename = $request->file[$i]->getClientOriginalName();
 
                     $filesWhithError[$j]['index']= $i;
