@@ -164,20 +164,43 @@ class UserPositionController extends Controller
 
             $userContacts = UserContact::where('user_id', $user_id)
                                         ->where('contact_type', 'App\\User')
+                                        ->with('contact')
                                         ->get();
+
+            $user_contacts_positions = array();
 
             foreach ($userContacts as $i => $userContact) {
 
                 //var_dump("USER_CONTACT_IND: " . $userContact);
                 $userContactsUser[$i]['id'] = $userContact['contact_id'];
-                $userContactsUser[$i]['positions'] = $userContact->positions;
+
+                foreach($userContact['contact']->positions as $k => $userContactPosition){
+                    $user_contacts_positions[$i][$k]['user_id'] = $userContactPosition['user_id'];
+                    $user_contacts_positions[$i][$k]['lat'] = $userContactPosition['lat'];
+                    $user_contacts_positions[$i][$k]['lon'] = $userContactPosition['lon'];
+                    $user_contacts_positions[$i][$k]['alt'] = $userContactPosition['alt'];
+                    $user_contacts_positions[$i][$k]['created_at'] = $userContactPosition['created_at'];
+                }
+
+                //$userContactsUser[$i]['positions'] = $userContact['contact']->positions;
 
             }
 
+            $user_positions = array();
+
+            foreach($user->positions as $j => $userPosition){
+                $user_positions[$j]['user_id'] = $user_id;
+                $user_positions[$j]['lat'] = $userPosition['lat'];
+                $user_positions[$j]['lon'] = $userPosition['lon'];
+                $user_positions[$j]['alt'] = $userPosition['alt'];
+                $user_positions[$j]['created_at'] = $userPosition['created_at'];
+            }
+            
+
             return response()->json([
                 'user' => $user_id,
-                'user_positions' => $user->positions,
-                'user_contacts_positions' => $userContactsUser,
+                'user_positions' => $user_positions,
+                'user_contacts_positions' => $user_contacts_positions,
             ]);
         }
 
