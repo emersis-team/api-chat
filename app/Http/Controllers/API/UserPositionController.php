@@ -86,7 +86,7 @@ class UserPositionController extends Controller
 
     public function createUserPosition(Request $request)
     {
-        $user = Auth::user();
+        //$user = Auth::user();
 
         try {
             //Chequea los campos de entrada
@@ -126,7 +126,7 @@ class UserPositionController extends Controller
             return response()->json([
                             'status' => 200,
                             'message' => 'Creación de la posición del usuario, realizada con éxito',
-                            'user_position_id' => $user_position->id,
+                            'user_id' => $user->id,
                             'lat' => $user_position->lat,
                             'lon' => $user_position->lon,
                             'alt' => $user_position->alt
