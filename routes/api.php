@@ -58,4 +58,12 @@ use Illuminate\Support\Facades\Route;
         Route::post('/fileMessage', 'MessagesController@createFileMessage');
         Route::post('/positionMessage', 'MessagesController@createPositionMessage');
 
+        //User Position
+        Route::prefix('position')->group(function () {
+            Route::get('/{user_id}/user_positions', 'UserPositionController@getUserPositions');
+            Route::get('/{user_id}/last_user_position', 'UserPositionController@getLastUserPosition');
+            Route::post('/user_position', 'UserPositionController@createUserPosition');
+            Route::get('/{user_id}/user_contacts_positions', 'UserPositionController@getContactsPositions');
+        });
+
  });;

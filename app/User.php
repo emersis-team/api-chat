@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Models\UserPosition;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -43,5 +44,18 @@ class User extends Authenticatable
     public function messages_sent()
     {
         return $this->hasMany('App\Models\Message', 'sender_id')->orderBy('created_at','desc');
+    }
+
+    //Get Positions for the User
+    public function positions()
+    {
+        return $this->hasMany('App\Models\UserPosition')->orderBy('created_at','desc');
+    }
+
+    public function getUserLastPositionAttribute()
+    {
+        $lastPosition = UserPosition::where('user_id',$this->id)->orderBy('created_at','desc')->first();
+        
+        return $lastPosition;
     }
 }

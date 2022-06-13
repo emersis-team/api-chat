@@ -886,4 +886,5 @@ class MessagesController extends Controller
             ], $code);
         }
     }
+
 }
