@@ -19,9 +19,9 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class UserPositionController extends Controller
 {
-   
+
     public function getUserPositions($user_id)
-    { 
+    {
         //$user = Auth::user();
 
         $user_id =intval($user_id);
@@ -54,18 +54,18 @@ class UserPositionController extends Controller
     }
 
     public function getLastUserPosition($user_id)
-    { 
+    {
          //$user = Auth::user();
 
          $user_id =intval($user_id);
          try {
              //Chequea que exista el usuario
              $user = User::find($user_id);
- 
+
              if ($user == null) {
                  throw new AccessDeniedHttpException(__('No existe el usuario.'));
              }
- 
+
             $userLastPosition = $user->positions->first();
 
             return response()->json([
@@ -111,7 +111,7 @@ class UserPositionController extends Controller
                 'lon' => $campos['lon'],
                 'alt' => $campos['alt']
             ]);
-            
+
             if (!$user_position) {
                 throw new \Error('No se pudo crear la posición actual del usuario.');
             }
@@ -133,7 +133,7 @@ class UserPositionController extends Controller
 
             ]);
         }
-        
+
         catch (QueryException $e) {
             throw new \Error('Error SQL');
         }
@@ -160,8 +160,6 @@ class UserPositionController extends Controller
                 throw new AccessDeniedHttpException(__('No existe el usuario.'));
             }
 
-            $userContactsUser = array();
-
             $userContacts = UserContact::where('user_id', $user_id)
                                         ->where('contact_type', 'App\\User')
                                         ->with('contact')
@@ -169,20 +167,24 @@ class UserPositionController extends Controller
 
             $user_contacts_positions = array();
 
+            $a = -1;
+
             foreach ($userContacts as $i => $userContact) {
 
-                //var_dump("USER_CONTACT_IND: " . $userContact);
-                $userContactsUser[$i]['id'] = $userContact['contact_id'];
+                //var_dump("USER_CONTACT_IND ID: " . $userContact->contact_type . $userContact->contact_id);
 
-                foreach($userContact['contact']->positions as $k => $userContactPosition){
-                    $user_contacts_positions[$i][$k]['user_id'] = $userContactPosition['user_id'];
-                    $user_contacts_positions[$i][$k]['lat'] = $userContactPosition['lat'];
-                    $user_contacts_positions[$i][$k]['lon'] = $userContactPosition['lon'];
-                    $user_contacts_positions[$i][$k]['alt'] = $userContactPosition['alt'];
-                    $user_contacts_positions[$i][$k]['created_at'] = $userContactPosition['created_at'];
+                if(count($userContact['contact']->positions) > 0){ //Contacto con posiciones
+                    $a++;
                 }
 
-                //$userContactsUser[$i]['positions'] = $userContact['contact']->positions;
+                foreach($userContact['contact']->positions as $k => $userContactPosition){
+
+                    $user_contacts_positions[$a][$k]['user_id'] = $userContactPosition['user_id'];
+                    $user_contacts_positions[$a][$k]['lat'] = $userContactPosition['lat'];
+                    $user_contacts_positions[$a][$k]['lon'] = $userContactPosition['lon'];
+                    $user_contacts_positions[$a][$k]['alt'] = $userContactPosition['alt'];
+                    $user_contacts_positions[$a][$k]['created_at'] = $userContactPosition['created_at'];
+                }
 
             }
 
@@ -195,13 +197,17 @@ class UserPositionController extends Controller
                 $user_positions[$j]['alt'] = $userPosition['alt'];
                 $user_positions[$j]['created_at'] = $userPosition['created_at'];
             }
-            
+
 
             return response()->json([
                 'user' => $user_id,
                 'user_positions' => $user_positions,
-                'user_contacts_positions' => $user_contacts_positions,
+                'user_contacts_positions' => $user_contacts_positions
             ]);
+        }
+
+        catch (QueryException $e) {
+            throw new \Error('Error SQL');
         }
 
         catch (\Throwable $e) {
