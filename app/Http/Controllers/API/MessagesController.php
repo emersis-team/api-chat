@@ -216,7 +216,6 @@ class MessagesController extends Controller
             ], $code);
         }
     }
-
     public function getMessagesFromConversation($user_id, $conversation_id)
     {
         //Se envía el id de la conversación por $conversation_id porque puede enviarse id=0 y sino rebotaría porque no existe en la BD
@@ -887,4 +886,166 @@ class MessagesController extends Controller
         }
     }
 
+
+    //Prueba de api con validación de token
+    public function getMessagesFromConversationTOKEN($conversation_id)
+    {
+        //INICIA Validación del TOKEN enviado en el header
+        $jwt = "";
+        foreach (getallheaders() as $name => $value) {
+            //echo "$name: $value\n";
+            if($name == "Authorization"){
+                $jwt = substr($value, 7);
+                echo $jwt . "\n";
+                break;
+            }
+        }
+
+        // split the jwt
+        $tokenParts = explode('.', $jwt);
+        $header = base64_decode($tokenParts[0]);
+        $payload = base64_decode($tokenParts[1]);
+        $signature_provided = $tokenParts[2];
+
+        echo $header . "\n";
+        echo $payload . "\n";
+        echo $signature_provided . "\n";
+
+        //Se consulta qué CLIENT es el que está queriendo acceder a la API, para extraer la SECRET del .env
+        $client = json_decode($payload)->client;
+        echo "CLIENTE: " . $client . "\n";
+
+        $secret = env($client, 0);
+        echo "SECRET: " . $secret . "\n";
+
+        // check the expiration time - note this will cause an error if there is no 'exp' claim in the jwt
+        $expiration = json_decode($payload)->exp;
+        
+        if($expiration - time() < 0){
+            $is_token_expired = 1;
+            echo $is_token_expired . " El token EXPIRÓ\n";
+        }else {
+            $is_token_expired = 0;
+            echo $is_token_expired . " El token NO EXPIRÓ\n";;
+        }
+
+       
+        
+        // build a signature based on the header and payload using the secret
+        $base64_url_header = rtrim(strtr(base64_encode($header), '+/', '-_'), '=');
+        $base64_url_payload = rtrim(strtr(base64_encode($payload), '+/', '-_'), '=');
+        $signature = hash_hmac('SHA256', $base64_url_header . "." . $base64_url_payload, $secret, true);
+        $base64_url_signature = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
+
+        // verify it matches the signature provided in the jwt
+        if($base64_url_signature === $signature_provided){
+            $is_signature_valid = 1;
+            echo $is_signature_valid . " La FIRMA es Válida\n";
+        }else{
+            $is_signature_valid = 0;
+            echo $is_signature_valid . " La FIRMA NO es Válida\n";
+        }
+        
+        if ($is_token_expired || !$is_signature_valid) {
+            echo "El TOKEN NO es válido". "\n";
+        } else {
+            echo "El TOKEN es válido". "\n";
+            $user_id = json_decode($payload)->user_id;
+            echo "USER_ID: " . $user_id . "\n";
+        }
+        
+
+        //FINALIZA validación de TOKEN
+
+        //Se envía el id de la conversación por $conversation_id porque puede enviarse id=0 y sino rebotaría porque no existe en la BD
+        //$user = Auth::user();
+        //$user_id = intval($user_id);
+        $conversation_id = intval($conversation_id);
+
+        try {
+            //var_dump("Conversacion ID: " . $conversation_id);
+
+            //Chequea que exista el usuario
+            $user = User::find($user_id);
+
+            if ($user == null) {
+                throw new AccessDeniedHttpException(__('No existe el usuario.'));
+            }
+
+                //Chequea que exista la conversacion
+                $conversation = Conversation::where('id',$conversation_id)
+                                            ->first();
+
+                if (!$conversation) {
+                    throw new AccessDeniedHttpException(__('No existe la conversación.'));
+
+                } else {
+                    //Chequea que la conversacion pertenezca al usuario logueado, si es así actualiza la fecha última de visualización de esta conversación/contacto
+                    if ($conversation->type == "INDIVIDUAL") {
+
+                        if($user_id !== $conversation->user_id_1 && $user_id !== $conversation->user_id_2){
+                            throw new AccessDeniedHttpException(__('El usuario NO es parte de la conversación individual.'));
+                        }else{
+                            //Averigua cual es el contact_id (user) para luego actualizar la tabla user_contacts con la ultima fecha de visualización de la conversación con ese contacto
+                            if($conversation->user_id_1 == $user_id){
+                                $contact_id = $conversation->user_id_2;
+                            }else{
+                                $contact_id = $conversation->user_id_1;
+                            }
+
+                            //Actualiza la fecha última de visualización de esta conversación/contacto
+                            UserContact::where('contact_type', "App\\User")
+                                    ->where('user_id', $user->id)
+                                    ->where('contact_id', $contact_id)
+                                    ->update(['last_read_at' => now()]);
+                        }
+
+                    }elseif ($conversation->type == "GROUP") {
+
+                        $user_valid_groups = UserContact::where('user_id', $user_id)
+                                                        ->where('contact_type', "App\\Models\\Group")
+                                                        ->where('contact_id', $conversation->group_id)->first();
+                        if(!$user_valid_groups) {
+                            throw new AccessDeniedHttpException(__('El usuario NO tiene permisos para acceder a la conversación grupal.'));
+                        }
+
+                        //Actualiza la fecha última de visualización de esta conversación/contacto
+                        UserContact::where('contact_type', "App\\Models\\Group")
+                                    ->where('user_id', $user->id)
+                                    ->where('contact_id', $conversation->group_id)
+                                    ->update(['last_read_at' => now()]);
+                    }
+                }
+
+                //Devuelve los mensajes de una Conversacion
+                $messages = Message::select(['conversation_id','sender_id','sender_id','message_type','message_id','created_at'])
+                                    ->where('conversation_id', $conversation->id)
+                                    ->orderBy('created_at', 'desc')
+                                    ->paginate(10);
+
+                //TODO - ANALIZAR si se insertará visualización en la tabla message_visualizations
+
+
+            //TODO - Devolución de la info necesaria, eliminar los datos NO necesarios
+            return response()->json([
+                'user_origin' => $user_id,
+                'messages' => $messages,
+            ]);
+        }
+
+        catch (QueryException $e) {
+            throw new \Error('Error SQL');
+        }
+
+        catch (\Throwable $e) {
+            DB::rollBack();
+
+            $code = $e->getCode() ? $e->getCode() : 500;
+            return response()->json([
+                'status' => $e->getCode() ? $e->getCode() : 500,
+                'message' => $e->getMessage()
+            ], $code);
+        }
+
+    }
 }

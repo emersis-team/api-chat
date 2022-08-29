@@ -52,13 +52,13 @@ class jwt extends Command
     public function handle()
     {
         $headers = array('alg'=>'HS256','typ'=>'JWT');
-        $payload = array('sub'=>'1234567890','name'=>'John Doe', 'admin'=>true, 'exp'=>(time() + 3600));
+        $payload = array('sub'=>'1234567890','client'=>'CLIENT_1_SECRET', 'user_id'=>1, 'admin'=>true, 'exp'=>(time() + 3600));
 
         $headers_encoded = rtrim(strtr(base64_encode(json_encode($headers)), '+/', '-_'), '=');
         
         $payload_encoded = rtrim(strtr(base64_encode(json_encode($payload)), '+/', '-_'), '=');
         
-        $signature = hash_hmac('SHA256', "$headers_encoded.$payload_encoded", 'secreto', true);
+        $signature = hash_hmac('SHA256', "$headers_encoded.$payload_encoded", 'client_1', true);
         $signature_encoded = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
         
         $jwt = "$headers_encoded.$payload_encoded.$signature_encoded";

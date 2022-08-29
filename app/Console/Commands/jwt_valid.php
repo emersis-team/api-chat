@@ -37,7 +37,7 @@ class jwt_valid extends Command
      */
     public function handle()
     {
-        $jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImV4cCI6MTY1OTk3NTk3MH0.qc7hhMIKJjRsHZ-0wG48AcTQuuNBd2ruZBXQWvCw-7o";
+        $jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IlZhbGVyaWEgQmxhbmNvIiwiYWRtaW4iOnRydWUsImV4cCI6MTY2MTc3NjA2Nn0.4yqnsrnESXJCPSBiexOdVSeO8TF47FFyOxtRIzrG9o4";
 
         // split the jwt
         $tokenParts = explode('.', $jwt);
