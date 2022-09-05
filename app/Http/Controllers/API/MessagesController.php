@@ -892,12 +892,15 @@ class MessagesController extends Controller
     {
         //INICIA Validación del TOKEN enviado en el header
         $jwt = "";
+        $client = "";
         foreach (getallheaders() as $name => $value) {
             //echo "$name: $value\n";
             if($name == "Authorization"){
-                $jwt = substr($value, 7);
+                $jwt = substr($value, 7); //Se extrae 'Bearer ' y nos quedamos con el token
                 echo $jwt . "\n";
-                break;
+            }else if($name == "client"){
+                $client = $value; 
+                echo "CLIENTE: " . $client . "\n";
             }
         }
 
@@ -907,13 +910,13 @@ class MessagesController extends Controller
         $payload = base64_decode($tokenParts[1]);
         $signature_provided = $tokenParts[2];
 
-        echo $header . "\n";
-        echo $payload . "\n";
-        echo $signature_provided . "\n";
+        //echo $header . "\n";
+        //echo $payload . "\n";
+        //echo $signature_provided . "\n";
 
         //Se consulta qué CLIENT es el que está queriendo acceder a la API, para extraer la SECRET del .env
-        $client = json_decode($payload)->client;
-        echo "CLIENTE: " . $client . "\n";
+        //$client = json_decode($payload)->client;
+        //echo "CLIENTE: " . $client . "\n";
 
         $secret = getenv($client);
         echo "SECRET: " . $secret . "\n";
@@ -928,8 +931,6 @@ class MessagesController extends Controller
             $is_token_expired = 0;
             echo $is_token_expired . " El token NO EXPIRÓ\n";;
         }
-
-
 
         // build a signature based on the header and payload using the secret
         $base64_url_header = rtrim(strtr(base64_encode($header), '+/', '-_'), '=');

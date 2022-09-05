@@ -37,7 +37,7 @@ class jwt_valid extends Command
      */
     public function handle()
     {
-        $jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiY2xpZW50IjoiQ0xJRU5UXzFfU0VDUkVUIiwidXNlcl9pZCI6MSwiYWRtaW4iOnRydWUsImV4cCI6MTY2MTg5OTY5MH0.hCmlr4jCAxQ_8cYFfzpbGcG3ZCk-EMIY9de0Ee3fIPU";
+        $jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidXNlcl9pZCI6MSwiYWRtaW4iOnRydWUsImV4cCI6MTY2MjM4MTU1MX0.U__DoyzDyOeR805LVG_Zp93d-5mq0YBOY4ErGmHfA6A";
 
         // split the jwt
         $tokenParts = explode('.', $jwt);
@@ -66,7 +66,7 @@ class jwt_valid extends Command
         // build a signature based on the header and payload using the secret
         $base64_url_header = rtrim(strtr(base64_encode($header), '+/', '-_'), '=');
         $base64_url_payload = rtrim(strtr(base64_encode($payload), '+/', '-_'), '=');
-        $signature = hash_hmac('SHA256', $base64_url_header . "." . $base64_url_payload, 'secreto', true);
+        $signature = hash_hmac('SHA256', $base64_url_header . "." . $base64_url_payload, 'client_2', true);
         $base64_url_signature = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
 
         echo $base64_url_signature . "\n";
