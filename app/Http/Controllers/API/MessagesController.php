@@ -915,12 +915,12 @@ class MessagesController extends Controller
         $client = json_decode($payload)->client;
         echo "CLIENTE: " . $client . "\n";
 
-        $secret = env($client, 0);
+        $secret = getenv($client);
         echo "SECRET: " . $secret . "\n";
 
         // check the expiration time - note this will cause an error if there is no 'exp' claim in the jwt
         $expiration = json_decode($payload)->exp;
-        
+
         if($expiration - time() < 0){
             $is_token_expired = 1;
             echo $is_token_expired . " El token EXPIRÓ\n";
@@ -929,8 +929,8 @@ class MessagesController extends Controller
             echo $is_token_expired . " El token NO EXPIRÓ\n";;
         }
 
-       
-        
+
+
         // build a signature based on the header and payload using the secret
         $base64_url_header = rtrim(strtr(base64_encode($header), '+/', '-_'), '=');
         $base64_url_payload = rtrim(strtr(base64_encode($payload), '+/', '-_'), '=');
@@ -945,7 +945,7 @@ class MessagesController extends Controller
             $is_signature_valid = 0;
             echo $is_signature_valid . " La FIRMA NO es Válida\n";
         }
-        
+
         if ($is_token_expired || !$is_signature_valid) {
             echo "El TOKEN NO es válido". "\n";
         } else {
@@ -953,7 +953,7 @@ class MessagesController extends Controller
             $user_id = json_decode($payload)->user_id;
             echo "USER_ID: " . $user_id . "\n";
         }
-        
+
 
         //FINALIZA validación de TOKEN
 

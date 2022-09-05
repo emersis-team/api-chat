@@ -37,7 +37,7 @@ class jwt_valid extends Command
      */
     public function handle()
     {
-        $jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IlZhbGVyaWEgQmxhbmNvIiwiYWRtaW4iOnRydWUsImV4cCI6MTY2MTc3NjA2Nn0.4yqnsrnESXJCPSBiexOdVSeO8TF47FFyOxtRIzrG9o4";
+        $jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiY2xpZW50IjoiQ0xJRU5UXzFfU0VDUkVUIiwidXNlcl9pZCI6MSwiYWRtaW4iOnRydWUsImV4cCI6MTY2MTg5OTY5MH0.hCmlr4jCAxQ_8cYFfzpbGcG3ZCk-EMIY9de0Ee3fIPU";
 
         // split the jwt
         $tokenParts = explode('.', $jwt);
@@ -51,13 +51,13 @@ class jwt_valid extends Command
 
         // check the expiration time - note this will cause an error if there is no 'exp' claim in the jwt
         $expiration = json_decode($payload)->exp;
-        
+
         if($expiration - time() < 0){
             $is_token_expired = 1;
         }else {
             $is_token_expired = 0;
         }
-        
+
 
         echo $expiration . "\n";
         echo time() . "\n";
@@ -78,7 +78,7 @@ class jwt_valid extends Command
         }else{
             $is_signature_valid = 0;
         }
-        
+
         echo $is_signature_valid . "\n";
 
         if ($is_token_expired || !$is_signature_valid) {
