@@ -52,14 +52,19 @@ use Illuminate\Support\Facades\Route;
     'name' => 'api.',
 
 ], function () {
-        Route::get('/{user_id}/conversations', 'MessagesController@getConversations');
+        //Route::get('/{user_id}/conversations', 'MessagesController@getConversations');
         Route::get('/{user_id}/conversations/{conversation_id}', 'MessagesController@getMessagesFromConversation');        
         Route::post('/textMessage', 'MessagesController@createTextMessage');
         Route::post('/fileMessage', 'MessagesController@createFileMessage');
         Route::post('/positionMessage', 'MessagesController@createPositionMessage');
 
+        //PRUEBA de llamada a API validando el TOKEN via Middleware
+        Route::get('/conversations/{conversation_id}', 'MessagesController@getMessagesFromConversationWithMiddlewareTOKEN')->middleware('JWTCidesoMiddleware');
+
         //PRUEBA de llamada a API validando el TOKEN recibido por header
-        Route::get('/conversations/{conversation_id}', 'MessagesController@getMessagesFromConversationTOKEN');
+       // Route::get('/conversations/{conversation_id}', 'MessagesController@getMessagesFromConversationTOKEN');
+
+        
 
         //User Position
         Route::prefix('position')->group(function () {
@@ -69,4 +74,4 @@ use Illuminate\Support\Facades\Route;
             Route::get('/{user_id}/user_contacts_positions', 'UserPositionController@getContactsPositions');
         });
 
- });;
+ });

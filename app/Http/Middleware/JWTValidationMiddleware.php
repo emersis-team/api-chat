@@ -19,14 +19,13 @@ class JWTValidationMiddleware
          $jwt = "";
          $client = "";
 
-         $jwt = $request->headers->Authorization;
-         $client = $request->headers->client;
+         $jwt = $request->headers->get("Authorization");
+         $client = $request->headers->get("client");
 
-         echo "Authorization" . $request->headers->Authorization . "\n";
-         echo "CLIENTE: " . $request->headers->client . "\n";
+        //  echo "Authorization" . $request->headers->get("Authorization") . "\n";
+        //  echo "CLIENTE: " . $request->headers->get("client") . "\n";
 
          $jwt = substr($jwt, 7); //Se extrae 'Bearer ' y nos quedamos con el token
-
  
          // split the jwt
          $tokenParts = explode('.', $jwt);
@@ -41,7 +40,7 @@ class JWTValidationMiddleware
          //Se consulta qué CLIENT es el que está queriendo acceder a la API, para extraer la SECRET del .env
  
          $secret = getenv($client);
-         echo "SECRET: " . $secret . "\n";
+         //echo "SECRET: " . $secret . "\n";
  
          // check the expiration time - note this will cause an error if there is no 'exp' claim in the jwt
          $expiration = json_decode($payload)->exp;
@@ -49,6 +48,7 @@ class JWTValidationMiddleware
          if($expiration - time() < 0){
              $is_token_expired = 1;
              echo $is_token_expired . " El token EXPIRÓ\n";
+             return abort(403);
          }else {
              $is_token_expired = 0;
              echo $is_token_expired . " El token NO EXPIRÓ\n";;
@@ -67,16 +67,8 @@ class JWTValidationMiddleware
          }else{
              $is_signature_valid = 0;
              echo $is_signature_valid . " La FIRMA NO es Válida\n";
+             return abort(403);
          }
- 
-         if ($is_token_expired || !$is_signature_valid) {
-             echo "El TOKEN NO es válido". "\n";
-         } else {
-             echo "El TOKEN es válido". "\n";
-             $user_id = json_decode($payload)->user_id;
-             echo "USER_ID: " . $user_id . "\n";
-         }
- 
  
          //FINALIZA validación de TOKEN
 
