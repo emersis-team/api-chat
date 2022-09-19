@@ -1173,18 +1173,27 @@ class MessagesController extends Controller
     }
     public function createTextMessageJWT(Request $request)
     {
-        $user_id = UserFromJWTController::getUserId();;
+        $user_id = UserFromJWTController::getUserId();
         //Se asume que TODAS las conversaciones ya están cargadas en la tabla de conversations
 
         DB::beginTransaction();
         try {
             //Chequea los campos de entrada
-            $campos = $request->validate([
-               // 'user_id' => ['required','integer', 'exists:users,id'],
-                'conversation_id' => ['required','integer', 'exists:conversations,id'],
-                'message' => ['required','string', 'max:255'],
-            ]);
+            $validator = Validator::make(
+                $request->all(),
+                [
+                    'conversation_id' => ['required','integer', 'exists:conversations,id'],
+                    'message' => ['required','string', 'max:255'],
+                ]
+            );
+    
+            if ($validator->fails()) {
+                return response()->json([
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
 
+            $campos = $request;
             $user = User::find($user_id);
             //var_dump($user);
 
@@ -1343,11 +1352,9 @@ class MessagesController extends Controller
 
         $files = array();
 
-
         $validator = Validator::make(
             $request->all(),
             [
-                //'user_id' => ['required','integer', 'exists:users,id'],
                 'conversation_id' => ['required','integer', 'exists:conversations,id'],
                 'file' => ['required', 'array'],
             ]
@@ -1587,13 +1594,23 @@ class MessagesController extends Controller
         try {
 
             //Chequea los campos de entrada
-            $campos = $request->validate([
-                //'user_id' => ['required','integer', 'exists:users,id'],
-                'conversation_id' => ['required','integer', 'exists:conversations,id'],
-                'lat' => ['required','numeric'],
-                'lon' => ['required','numeric'],
-                'alt' => ['required','numeric'],
-            ]);
+            $validator = Validator::make(
+                $request->all(),
+                [
+                    'conversation_id' => ['required','integer', 'exists:conversations,id'],
+                    'lat' => ['required','numeric'],
+                    'lon' => ['required','numeric'],
+                    'alt' => ['required','numeric'],
+                ]
+            );
+    
+            if ($validator->fails()) {
+                return response()->json([
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $campos = $request;
 
             $user = User::find($user_id);
             if ($user == null) {

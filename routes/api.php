@@ -47,7 +47,6 @@ use Illuminate\Support\Facades\Route;
 //  });
 
 //  Route::group([
-//     //'middleware' => ['JWTCidesoMiddleware'],
 //     'namespace' => 'API',
 //     'name' => 'api.',
 
@@ -75,7 +74,6 @@ use Illuminate\Support\Facades\Route;
     'name' => 'api.',
 
 ], function () {
-        //Route::get('/{user_id}/conversations', 'MessagesController@getConversations');
         Route::get('/conversations', 'MessagesController@getConversationsJWT');
         Route::get('/conversations/{conversation_id}', 'MessagesController@getMessagesFromConversationJWT');
         Route::post('/textMessage', 'MessagesController@createTextMessageJWT');
@@ -87,10 +85,10 @@ use Illuminate\Support\Facades\Route;
 
         //User Position
         Route::prefix('position')->group(function () {
-            Route::get('/{user_id}/user_positions', 'UserPositionController@getUserPositions');
-            Route::get('/{user_id}/last_user_position', 'UserPositionController@getLastUserPosition');
-            Route::post('/user_position', 'UserPositionController@createUserPosition');
-            Route::get('/{user_id}/user_contacts_positions', 'UserPositionController@getContactsPositions');
+            Route::get('/user_positions', 'UserPositionController@getUserPositionsJWT');
+            Route::get('/last_user_position', 'UserPositionController@getLastUserPositionJWT');
+            Route::post('/user_position', 'UserPositionController@createUserPositionJWT');
+            Route::get('/user_contacts_positions', 'UserPositionController@getContactsPositionsJWT');
         });
 
  });

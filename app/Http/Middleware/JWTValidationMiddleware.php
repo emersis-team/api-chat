@@ -20,7 +20,8 @@ class JWTValidationMiddleware
          $client = "";
 
          $jwt = $request->headers->get("Authorization");
-         $client = $request->headers->get("client");
+         $client = "CLIENT_2_SECRET";
+         //$client = $request->headers->get("client");
 
         //  echo "Authorization" . $request->headers->get("Authorization") . "\n";
         //  echo "CLIENTE: " . $request->headers->get("client") . "\n";
