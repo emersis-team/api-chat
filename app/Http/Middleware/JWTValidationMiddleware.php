@@ -58,7 +58,7 @@ class JWTValidationMiddleware
          // build a signature based on the header and payload using the secret
          $base64_url_header = rtrim(strtr(base64_encode($header), '+/', '-_'), '=');
          $base64_url_payload = rtrim(strtr(base64_encode($payload), '+/', '-_'), '=');
-         $signature = hash_hmac('SHA256', $base64_url_header . "." . $base64_url_payload, $secret, true);
+         $signature = hash_hmac('SHA512', $base64_url_header . "." . $base64_url_payload, $secret, true);
          $base64_url_signature = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
  
          // verify it matches the signature provided in the jwt
