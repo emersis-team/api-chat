@@ -53,7 +53,7 @@ class jwt extends Command
     {
         //$headers = array('alg'=>'HS256','typ'=>'JWT');
         $headers = array('alg'=>'HS512','typ'=>'JWT');
-        $payload = array('sub'=>'1234567890', 'user_id'=>1, 'admin'=>true, 'exp'=>(time() + 3600));
+        $payload = array('sub'=>'1234567890', 'user_name'=>'vblanco', 'user_id'=>1, 'admin'=>true, 'exp'=>(time() + 3600));
 
         $headers_encoded = rtrim(strtr(base64_encode(json_encode($headers)), '+/', '-_'), '=');
 
