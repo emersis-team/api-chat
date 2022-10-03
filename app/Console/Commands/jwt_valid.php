@@ -37,8 +37,8 @@ class jwt_valid extends Command
      */
     public function handle()
     {
-        //$jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiY2xpZW50IjoiQ0xJRU5UXzFfU0VDUkVUIiwidXNlcl9pZCI6MSwiYWRtaW4iOnRydWUsImV4cCI6MTY2MTg5OTY5MH0.hCmlr4jCAxQ_8cYFfzpbGcG3ZCk-EMIY9de0Ee3fIPU";
-        $jwt = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidXNlcl9uYW1lIjoidmJsYW5jbyIsInVzZXJfaWQiOjEsImFkbWluIjp0cnVlLCJleHAiOjE2NjQzODAxNTF9.Zj5Q3goCxzfrcA2U_ZeP9g8nT82n78Mh1lVzn8liQoIcp5d3BfvoIs8JHz-ygBB262T5gqFVfZa2-TESUyiYHw";
+        $jwt = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidXNlcl9uYW1lIjoidmJsYW5jbyIsInVzZXJfaWQiOm51bGwsImFkbWluIjp0cnVlLCJleHAiOjE2NjQ4MTQwOTZ9.SALMCBzc76uwizvrgDqEV7xXg9meTlbMea45GMleiZZxg3-Ji-kChFSret7faF2su-NENvdLHSwETRmgKJtYGA";
+        //$jwt = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.  eyJzdWIiOiIxMjM0NTY3ODkwIiwidXNlcl9uYW1lIjoidmJsYW5jbyIsInVzZXJfaWQiOm51bGwsImFkbWluIjp0cnVlLCJleHAiOjE2NjQ4MTM0NTJ9.z98EkrMugFbmHkDvbHcfWhXuGTU-meowDwY_ik6CzfoEplfI5C0hv-Mvh8YH7lDB-Cc4TZGT-5QE1C5hRdTbUA";
         // split the jwt
         $tokenParts = explode('.', $jwt);
         $header = base64_decode($tokenParts[0]);
@@ -67,10 +67,13 @@ class jwt_valid extends Command
         $base64_url_header = rtrim(strtr(base64_encode($header), '+/', '-_'), '=');
         $base64_url_payload = rtrim(strtr(base64_encode($payload), '+/', '-_'), '=');
         //$signature = hash_hmac('SHA256', $base64_url_header . "." . $base64_url_payload, 'client_2', true);
-        $signature = hash_hmac('SHA512', $base64_url_header . "." . $base64_url_payload, 'bJpXguw5gS/PL9L3VT6RqFIYXhIWjyelboCB31pgC8iVHiatvw7G3LiZpRUjGkN
-        bURNWAjJpwPqAwZdfF1O9Exo46JVE4NLIHE/lSwJ/UPgOECREw2pZbSXEUfVP/9i
-        CzHgaKDOBlFRGTqqtkja9Dh+72FePdWBjfl9tmROQt7rZMfjTN7trEHfEXt3KEC
-        zGYH/ehqVJdyMCOEJhlhx4OfSCBEU2UxMDO3Ng==', true);
+        // $signature = hash_hmac('SHA512', $base64_url_header . "." . $base64_url_payload, 'bJpXguw5gS/PL9L3VT6RqFIYXhIWjyelboCB31pgC8iVHiatvw7G3LiZpRUjGkN
+        // bURNWAjJpwPqAwZdfF1O9Exo46JVE4NLIHE/lSwJ/UPgOECREw2pZbSXEUfVP/9i
+        // CzHgaKDOBlFRGTqqtkja9Dh+72FePdWBjfl9tmROQt7rZMfjTN7trEHfEXt3KEC
+        // zGYH/ehqVJdyMCOEJhlhx4OfSCBEU2UxMDO3Ng==', true);
+
+        $signature = hash_hmac('SHA512', $base64_url_header . "." . $base64_url_payload, 'clave', true);
+
         $base64_url_signature = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
 
         echo $base64_url_signature . "\n";

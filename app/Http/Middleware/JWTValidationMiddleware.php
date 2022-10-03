@@ -34,14 +34,21 @@ class JWTValidationMiddleware
          $payload = base64_decode($tokenParts[1]);
          $signature_provided = $tokenParts[2];
  
-         //echo $header . "\n";
-         //echo $payload . "\n";
-         //echo $signature_provided . "\n";
+         echo $header . "\n";
+         echo $payload . "\n";
+         echo $signature_provided . "\n";
  
          //Se consulta qué CLIENT es el que está queriendo acceder a la API, para extraer la SECRET del .env
  
-         $secret = getenv($client);
-         //echo "SECRET: " . $secret . "\n";
+         //$secret = getenv($client);
+        //  $secret = 'bJpXguw5gS/PL9L3VT6RqFIYXhIWjyelboCB31pgC8iVHiatvw7G3LiZpRUjGkN
+        //  bURNWAjJpwPqAwZdfF1O9Exo46JVE4NLIHE/lSwJ/UPgOECREw2pZbSXEUfVP/9i
+        //  CzHgaKDOBlFRGTqqtkja9Dh+72FePdWBjfl9tmROQt7rZMfjTN7trEHfEXt3KEC
+        //  zGYH/ehqVJdyMCOEJhlhx4OfSCBEU2UxMDO3Ng==';
+
+        $secret = 'clave';
+         echo "CLIENT: " . $client . "\n";
+         echo "SECRET: " . $secret . "\n";
  
          // check the expiration time - note this will cause an error if there is no 'exp' claim in the jwt
          $expiration = json_decode($payload)->exp;
@@ -61,6 +68,8 @@ class JWTValidationMiddleware
          $signature = hash_hmac('SHA512', $base64_url_header . "." . $base64_url_payload, $secret, true);
          $base64_url_signature = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
  
+
+         echo $base64_url_signature . "\n";
          // verify it matches the signature provided in the jwt
          if($base64_url_signature === $signature_provided){
              $is_signature_valid = 1;
