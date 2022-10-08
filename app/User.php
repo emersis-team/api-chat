@@ -20,7 +20,8 @@ class User extends Authenticatable
     protected $fillable = [
         // 'name', 'email', 'password',
         'name',
-        'apellido',
+        'surname',
+        'grade',
         'user_name',
     ];
 
@@ -58,7 +59,7 @@ class User extends Authenticatable
     public function getUserLastPositionAttribute()
     {
         $lastPosition = UserPosition::where('user_id',$this->id)->orderBy('created_at','desc')->first();
-        
+
         return $lastPosition;
     }
 }

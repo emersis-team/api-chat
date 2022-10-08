@@ -3,9 +3,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 
-class AddUserInfoToUsersTable extends Migration
+class AddUserGradoToUsersTable extends Migration
 {
     /**
      * Run the migrations.
@@ -15,8 +14,7 @@ class AddUserInfoToUsersTable extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('surname')->after('name')->nullable()->default(NULL);
-            $table->string('user_name')->after('surname')->nullable()->default(NULL)->unique();
+            $table->string('grade')->after('surname')->nullable()->default(NULL);
         });
     }
 
@@ -28,8 +26,7 @@ class AddUserInfoToUsersTable extends Migration
     public function down()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('surname');
-            $table->dropColumn('user_name');
+            $table->dropColumn('grade');
         });
     }
 }

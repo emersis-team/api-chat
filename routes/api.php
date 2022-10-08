@@ -52,7 +52,7 @@ use Illuminate\Support\Facades\Route;
 
 // ], function () {
 //         Route::get('/{user_id}/conversations', 'MessagesController@getConversations');
-//         Route::get('/{user_id}/conversations/{conversation_id}', 'MessagesController@getMessagesFromConversation');        
+//         Route::get('/{user_id}/conversations/{conversation_id}', 'MessagesController@getMessagesFromConversation');
 //         Route::post('/textMessage', 'MessagesController@createTextMessage');
 //         Route::post('/fileMessage', 'MessagesController@createFileMessage');
 //         Route::post('/positionMessage', 'MessagesController@createPositionMessage');
@@ -80,7 +80,8 @@ use Illuminate\Support\Facades\Route;
         Route::post('/fileMessage', 'MessagesController@createFileMessageJWT');
         Route::post('/positionMessage', 'MessagesController@createPositionMessageJWT');
 
-        Route::get('/userId', 'UserController@getUserIdOrCreateJWT');
+        Route::get('/user', 'UserController@getUserJWT');
+        Route::post('/user', 'UserController@createUserJWT');
 
         //PRUEBA de llamada a API validando el TOKEN recibido por header
        // Route::get('/conversations/{conversation_id}', 'MessagesController@getMessagesFromConversationTOKEN');
