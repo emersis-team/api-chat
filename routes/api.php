@@ -81,7 +81,8 @@ use Illuminate\Support\Facades\Route;
         Route::post('/positionMessage', 'MessagesController@createPositionMessageJWT');
 
         Route::get('/user', 'UserController@getUserJWT');
-        Route::post('/user', 'UserController@createUserJWT');
+        Route::post('/newUser', 'UserController@createUserJWT');
+        Route::post('/user', 'UserController@updateUserJWT');
 
         //PRUEBA de llamada a API validando el TOKEN recibido por header
        // Route::get('/conversations/{conversation_id}', 'MessagesController@getMessagesFromConversationTOKEN');

@@ -43,7 +43,8 @@ class php_jwt extends Command
         $key = 'CIDESO';
 
         $payload = [
-            'user_name' => 'vblanco',
+            //'user_name' => NULL,
+            'user_name' => 'ebuiatti',
             //'user_id' => NULL,
             'user_id' => 1
 

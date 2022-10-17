@@ -36,17 +36,22 @@ class UserController extends Controller
                 echo "USER NAME: " . $user_name . "\n";
                 $user = User::where('user_name',$user_name)->first();
 
-            }else{
+            }else if($user_id){
                 echo "USER ID: " . $user_id;
                 $user = User::find($user_id) . "\n";
+            }else{
+                return response()->json([
+                    'error' => "El token NO contiene el user_name ni el user_id\n",
+                ], 422); 
             }
 
             // echo "USER NAME: " . $user->name . "\n";
             // echo "USER ID: " . $user->id . "\n";
 
-            //TODO Ver cómo poner el nro de error 404
             if ($user == null) {
-                throw new \Error('No exste el usuario.');
+                return response()->json([
+                    'error' => "No exste el usuario.",
+                ], 404); 
             }
 
             return response()->json([
@@ -72,7 +77,6 @@ class UserController extends Controller
     {
         //Si el user_name que se envía por JWT existe -> devuelve el user_id, si no existe se lo crea y también se devuelve el user_id
         $user_name = UserFromJWTController::getUserName();
-        $user_id = UserFromJWTController::getUserId();
 
         try {
 
@@ -91,6 +95,8 @@ class UserController extends Controller
                             'name' => ['required','string', 'max:255'],
                             'surname' => ['required','string', 'max:255'],
                             'grade' => ['nullable','string'],
+                            'dni' => ['required','integer'],
+                            'location_id' => ['required','integer', 'exists:locations,id'],
                         ]
                     );
 
@@ -107,6 +113,8 @@ class UserController extends Controller
                         'name' => $campos['name'],
                         'surname' => $campos['surname'],
                         'grade' => $campos['grade'],
+                        'dni' => $campos['dni'],
+                        'location_id' => $campos['location_id'],
                         'user_name' => $user_name,
                     ]);
 
@@ -118,8 +126,9 @@ class UserController extends Controller
                 }
 
             }else{
-                //TODO ERROR que indique se necesita el user_name en el token
-                echo "El token NO contiene el user_name\n";
+                return response()->json([
+                    'error' => "El token NO contiene el user_name\n",
+                ], 422); 
             }
 
             // echo "USER NAME: " . $user->name . "\n";
@@ -127,6 +136,78 @@ class UserController extends Controller
 
             return response()->json([
                 'user_id' => $user->id,
+            ]);
+        }
+
+        catch (\Throwable $e) {
+            return response()->json([
+                'status' => $e->getCode() ? $e->getCode() : 500,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateUserJWT(Request $request)
+    {
+        $user_id = UserFromJWTController::getUserId();
+
+        try {
+            //Chequea que exista el usuario con ese user_name o user_id (según corresponda)
+
+            if($user_id){
+                echo "USER ID: " . $user_id;
+                $user = User::find($user_id);
+            }else{
+                return response()->json([
+                    'error' => "El token NO contiene el user_id\n",
+                ], 422); 
+            }
+            
+            // echo "USER NAME: " . $user->name . "\n";
+            // echo "USER ID: " . $user->id . "\n";
+
+
+            if ($user != null) {
+                //Chequea los campos de entrada
+                $validator = Validator::make(
+                    $request->all(),
+                    [
+                        'name' => ['required','string', 'max:255'],
+                        'surname' => ['required','string', 'max:255'],
+                        'grade' => ['nullable','string'],
+                        'dni' => ['required','integer'],
+                        'location_id' => ['required','integer', 'exists:locations,id'],
+                    ]
+                );
+
+                if ($validator->fails()) {
+                    return response()->json([
+                        'errors' => $validator->errors(),
+                    ], 422);
+                }
+
+                $campos = $request;
+
+                //Actualiza el usuario
+                User::where('id', $user_id)
+                            ->update([
+                                'name' => $campos['name'],
+                                'surname' => $campos['surname'],
+                                'grade' => $campos['grade'],
+                                'dni' => $campos['dni'],
+                                'location_id' => $campos['location_id'],
+                                ]);
+
+
+            }else{
+                return response()->json([
+                    'error' => "No exste el usuario.",
+                ], 404);
+            }
+
+            $user = User::find($user_id);
+            return response()->json([
+                'user' => $user,
             ]);
         }
 
@@ -142,5 +223,6 @@ class UserController extends Controller
                 'message' => $e->getMessage()
             ], $code);
         }
+
     }
 }

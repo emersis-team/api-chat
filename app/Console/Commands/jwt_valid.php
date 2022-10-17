@@ -37,7 +37,7 @@ class jwt_valid extends Command
      */
     public function handle()
     {
-        $jwt = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwidXNlcl9uYW1lIjoidmJsYW5jbyIsInVzZXJfaWQiOm51bGwsImFkbWluIjp0cnVlLCJleHAiOjE2NjQ4MTQwOTZ9.SALMCBzc76uwizvrgDqEV7xXg9meTlbMea45GMleiZZxg3-Ji-kChFSret7faF2su-NENvdLHSwETRmgKJtYGA";
+        $jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJ1c2VyX25hbWUiOiJuZGViZWxsaXMiLCJ1c2VyX2lkIjpudWxsfQ.coRKUO0o0GtG-i50rFARPexGneTLzQyBm_C7HysUv9Lg7wU6p9dDrH_2XTW4xb2nHvDfBy7RmhpAYM8CBzr7sw";
         //$jwt = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.  eyJzdWIiOiIxMjM0NTY3ODkwIiwidXNlcl9uYW1lIjoidmJsYW5jbyIsInVzZXJfaWQiOm51bGwsImFkbWluIjp0cnVlLCJleHAiOjE2NjQ4MTM0NTJ9.z98EkrMugFbmHkDvbHcfWhXuGTU-meowDwY_ik6CzfoEplfI5C0hv-Mvh8YH7lDB-Cc4TZGT-5QE1C5hRdTbUA";
         // split the jwt
         $tokenParts = explode('.', $jwt);
