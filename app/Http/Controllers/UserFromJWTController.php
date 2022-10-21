@@ -8,7 +8,7 @@ use App\User;
 class UserFromJWTController extends Controller
 {
     //static public $user_id;
-    static public function getUserId()
+    static public function getUserIdFromJWT()
     {
         //INICIA extracción de userId desde el TOKEN enviado en el header
         $jwt = "";
@@ -37,7 +37,7 @@ class UserFromJWTController extends Controller
         return $user_id;
     }
 
-    static public function getUserName()
+    static public function getUserNameFromJWT()
     {
         //INICIA extracción de userName desde el TOKEN enviado en el header
         $jwt = "";

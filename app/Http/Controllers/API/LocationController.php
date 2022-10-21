@@ -15,8 +15,8 @@ class LocationController extends Controller
     public function getLocations()
     {
         //Si el user_name que se envía por JWT existe -> devuelve el user_id, si no existe devuelve error 404
-        $user_name = UserFromJWTController::getUserName();
-        $user_id = UserFromJWTController::getUserId();
+        $user_name = UserFromJWTController::getUserNameFromJWT();
+        $user_id = UserFromJWTController::getUserIdFromJWT();
 
         try {
             //Chequea que exista el usuario con ese user_name o user_id (según corresponda)
@@ -36,7 +36,7 @@ class LocationController extends Controller
             if ($user == null) {
                 return response()->json([
                     'error' => "No exste el usuario.",
-                ], 404); 
+                ], 404);
             }
 
             return response()->json([

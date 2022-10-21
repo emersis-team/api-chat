@@ -43,10 +43,10 @@ class php_jwt extends Command
         $key = 'CIDESO';
 
         $payload = [
-            //'user_name' => NULL,
-            'user_name' => 'ebuiatti',
-            //'user_id' => NULL,
-            'user_id' => 1
+            'user_name' => NULL,
+            'user_name' => 'vblanco',
+            'user_id' => NULL,
+            //'user_id' => 1
 
         ];
 
@@ -85,9 +85,12 @@ class php_jwt extends Command
 
         // print_r($decoded);
 
-        //JWT generada con JAVA
+        //JWT generada con JAVA "Hola Mundo"
         //$jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJIb2xhLCBtdW5kbyEifQ.801KrUFy9Drm2YDwCNRV7HybCCmO0bOy90ySZYjSSWszR3S_bPkF5dMMASVZ_f-D9ruZ16ih9L-oMhbtaUZ_zw";
-        print_r($jwt . "\n\n");
+
+        //JWT generada con JAVA
+        $jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjozLCJ1c2VyX25hbWUiOm51bGx9.NUzC75Rk7gsOvzItCPxHD8WlDkp3ZT4sICB8fKASwq-_h34KSpgiI1TB0GG7KDOFPVNLdUQQLRZlVV2Lyy2VdQ";
+        print_r("JWT de JAVA: \n\n" . $jwt . "\n\n");
 
 
 

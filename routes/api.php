@@ -80,9 +80,15 @@ use Illuminate\Support\Facades\Route;
         Route::post('/fileMessage', 'MessagesController@createFileMessageJWT');
         Route::post('/positionMessage', 'MessagesController@createPositionMessageJWT');
 
-        Route::get('/user', 'UserController@getUserJWT');
-        Route::post('/newUser', 'UserController@createUserJWT');
-        Route::post('/user', 'UserController@updateUserJWT');
+        //APIs de Autogestión de Usuarios
+        Route::get('/user', 'UserController@getUserLoggedJWT');  //Esta API también se llama después del login contra el portal, si EXISTE el usuario -> devuelve el objeto usuario, SI NO existe -> devuelve 404
+        Route::post('/user', 'UserController@updateUserLoggedJWT');
+
+        //APIs de Administración de Usuarios
+        Route::post('/admin/user', 'UserController@createUserJWT');
+        Route::get('/admin/user/{user_id}', 'UserController@getUserManagedJWT');
+        Route::post('/admin/user/{user_id}', 'UserController@updateUserManagedJWT');
+
 
         //PRUEBA de llamada a API validando el TOKEN recibido por header
        // Route::get('/conversations/{conversation_id}', 'MessagesController@getMessagesFromConversationTOKEN');

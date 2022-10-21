@@ -33,7 +33,7 @@ class MessagesController extends Controller
         //$user = Auth::user();
 
         $user_id =intval($user_id);
-        
+
         try {
             //Chequea que exista el usuario
             $user = User::find($user_id);
@@ -893,8 +893,8 @@ class MessagesController extends Controller
 
     public function getConversationsJWT()
     {
-        $user_id = UserFromJWTController::getUserId();
-        
+        $user_id = UserFromJWTController::getUserIdFromJWT();
+
         try {
             //Chequea que exista el usuario
             $user = User::find($user_id);
@@ -1083,30 +1083,30 @@ class MessagesController extends Controller
     {
         //Se envía el id de la conversación por $conversation_id porque puede enviarse id=0 y sino rebotaría porque no existe en la BD
 
-        $user_id = UserFromJWTController::getUserId();           
+        $user_id = UserFromJWTController::getUserIdFromJWT();
         $conversation_id = intval($conversation_id);
-    
+
         try {
             //var_dump("Conversacion ID: " . $conversation_id);
-    
+
             //Chequea que exista el usuario
             $user = User::find($user_id);
-    
+
             if ($user == null) {
                 throw new AccessDeniedHttpException(__('No existe el usuario.'));
             }
-    
+
             //Chequea que exista la conversacion
             $conversation = Conversation::where('id',$conversation_id)
                                                 ->first();
-    
+
             if (!$conversation) {
                 throw new AccessDeniedHttpException(__('No existe la conversación.'));
-    
+
             } else {
                 //Chequea que la conversacion pertenezca al usuario logueado, si es así actualiza la fecha última de visualización de esta conversación/contacto
                 if ($conversation->type == "INDIVIDUAL") {
-    
+
                     if($user_id !== $conversation->user_id_1 && $user_id !== $conversation->user_id_2){
                         throw new AccessDeniedHttpException(__('El usuario NO es parte de la conversación individual.'));
                     }else{
@@ -1116,23 +1116,23 @@ class MessagesController extends Controller
                         }else{
                             $contact_id = $conversation->user_id_1;
                         }
-    
+
                         //Actualiza la fecha última de visualización de esta conversación/contacto
                         UserContact::where('contact_type', "App\\User")
                                     ->where('user_id', $user->id)
                                     ->where('contact_id', $contact_id)
                                     ->update(['last_read_at' => now()]);
                     }
-    
+
                 }elseif ($conversation->type == "GROUP") {
-    
+
                    $user_valid_groups = UserContact::where('user_id', $user_id)
                                                             ->where('contact_type', "App\\Models\\Group")
                                                             ->where('contact_id', $conversation->group_id)->first();
                     if(!$user_valid_groups) {
                         throw new AccessDeniedHttpException(__('El usuario NO tiene permisos para acceder a la conversación grupal.'));
                     }
-    
+
                     //Actualiza la fecha última de visualización de esta conversación/contacto
                     UserContact::where('contact_type', "App\\Models\\Group")
                                         ->where('user_id', $user->id)
@@ -1140,40 +1140,40 @@ class MessagesController extends Controller
                                         ->update(['last_read_at' => now()]);
                 }
             }
-    
+
             //Devuelve los mensajes de una Conversacion
             $messages = Message::select(['conversation_id','sender_id','sender_id','message_type','message_id','created_at'])
                                         ->where('conversation_id', $conversation->id)
                                         ->orderBy('created_at', 'desc')
                                         ->paginate(10);
-    
+
             //TODO - ANALIZAR si se insertará visualización en la tabla message_visualizations
             //TODO - Devolución de la info necesaria, eliminar los datos NO necesarios
-                
+
             return response()->json([
                     'user_origin' => $user_id,
                     'messages' => $messages,
                 ]);
         }
-    
+
         catch (QueryException $e) {
-            throw new \Error('Error SQL');     
+            throw new \Error('Error SQL');
         }
-    
+
         catch (\Throwable $e) {
             DB::rollBack();
-    
+
             $code = $e->getCode() ? $e->getCode() : 500;
             return response()->json([
                 'status' => $e->getCode() ? $e->getCode() : 500,
                 'message' => $e->getMessage()
             ], $code);
         }
-    
+
     }
     public function createTextMessageJWT(Request $request)
     {
-        $user_id = UserFromJWTController::getUserId();
+        $user_id = UserFromJWTController::getUserIdFromJWT();
         //Se asume que TODAS las conversaciones ya están cargadas en la tabla de conversations
 
         DB::beginTransaction();
@@ -1186,7 +1186,7 @@ class MessagesController extends Controller
                     'message' => ['required','string', 'max:255'],
                 ]
             );
-    
+
             if ($validator->fails()) {
                 return response()->json([
                     'errors' => $validator->errors(),
@@ -1348,7 +1348,7 @@ class MessagesController extends Controller
     }
     public function createFileMessageJWT(Request $request)
     {
-        $user_id = UserFromJWTController::getUserId();
+        $user_id = UserFromJWTController::getUserIdFromJWT();
 
         $files = array();
 
@@ -1588,7 +1588,7 @@ class MessagesController extends Controller
     }
     public function createPositionMessageJWT(Request $request)
     {
-        $user_id = UserFromJWTController::getUserId();
+        $user_id = UserFromJWTController::getUserIdFromJWT();
 
         DB::beginTransaction();
         try {
@@ -1603,7 +1603,7 @@ class MessagesController extends Controller
                     'alt' => ['required','numeric'],
                 ]
             );
-    
+
             if ($validator->fails()) {
                 return response()->json([
                     'errors' => $validator->errors(),
@@ -1779,7 +1779,7 @@ class MessagesController extends Controller
                 $jwt = substr($value, 7); //Se extrae 'Bearer ' y nos quedamos con el token
                 echo $jwt . "\n";
             }else if($name == "client"){
-                $client = $value; 
+                $client = $value;
                 echo "CLIENTE: " . $client . "\n";
             }
         }

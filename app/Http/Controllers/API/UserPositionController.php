@@ -225,7 +225,7 @@ class UserPositionController extends Controller
 
     public function getUserPositionsJWT()
     {
-        $user_id = UserFromJWTController::getUserId();
+        $user_id = UserFromJWTController::getUserIdFromJWT();
 
         try {
             //Chequea que exista el usuario
@@ -257,7 +257,7 @@ class UserPositionController extends Controller
 
     public function getLastUserPositionJWT()
     {
-         $user_id = UserFromJWTController::getUserId();
+         $user_id = UserFromJWTController::getUserIdFromJWT();
 
          try {
              //Chequea que exista el usuario
@@ -287,7 +287,7 @@ class UserPositionController extends Controller
 
     public function createUserPositionJWT(Request $request)
     {
-        $user_id = UserFromJWTController::getUserId();
+        $user_id = UserFromJWTController::getUserIdFromJWT();
 
         try {
 
@@ -300,7 +300,7 @@ class UserPositionController extends Controller
                     'alt' => ['required','numeric'],
                 ]
             );
-    
+
             if ($validator->fails()) {
                 return response()->json([
                     'errors' => $validator->errors(),
@@ -361,7 +361,7 @@ class UserPositionController extends Controller
 
     public function getContactsPositionsJWT()
     {
-        $user_id = UserFromJWTController::getUserId();
+        $user_id = UserFromJWTController::getUserIdFromJWT();
 
         try {
             //Chequea que exista el usuario
