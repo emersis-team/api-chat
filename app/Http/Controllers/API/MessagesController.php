@@ -1369,8 +1369,8 @@ class MessagesController extends Controller
         $validatorFiles = Validator::make(
             $request->all(),
             [
-                //'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
-                'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
+                'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,png,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
+                //'file.*' => ['file','required', 'mimes:doc,pdf,docx,txt,zip,jpeg,bmp,xls,xlsx,mov,qt,mp4,mp3,m4a' ,'max:10240'],
                 'description' => ['sometimes', 'array'],
                 'description.*' => ['nullable', 'string'],
             ],[
