@@ -64,6 +64,9 @@ class Kernel extends HttpKernel
         'JSONMiddleware' => \App\Http\Middleware\JSONMiddleware::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'JWTCidesoMiddleware' => \App\Http\Middleware\JWTValidationMiddleware::class,
+        'UserIsAdminMiddleware' => \App\Http\Middleware\UserIsAdminMiddleware::class,
+        'JWTUserIdMiddleware' => \App\Http\Middleware\JWTUserIdMiddleware::class,
+        'JWTUserNameMiddleware' => \App\Http\Middleware\JWTUserNameMiddleware::class,
     ];
 
      /**

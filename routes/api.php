@@ -69,7 +69,7 @@ use Illuminate\Support\Facades\Route;
 
  //PRUEBA de llamada a API validando el TOKEN via Middleware
  Route::group([
-    'middleware' => ['JWTCidesoMiddleware'],
+    'middleware' => ['JWTCidesoMiddleware','JWTUserIdMiddleware'],
     'namespace' => 'API',
     'name' => 'api.',
 
@@ -81,14 +81,26 @@ use Illuminate\Support\Facades\Route;
         Route::post('/positionMessage', 'MessagesController@createPositionMessageJWT');
 
         //APIs de Autogestión de Usuarios
-        Route::get('/user', 'UserController@getUserLoggedJWT');  //Esta API también se llama después del login contra el portal, si EXISTE el usuario -> devuelve el objeto usuario, SI NO existe -> devuelve 404
+        Route::get('/user', 'UserController@getUserLoggedJWT')->withoutMiddleware(['JWTUserIdMiddleware']);  //Esta API también se llama después del login contra el portal, si EXISTE el usuario -> devuelve el objeto usuario, SI NO existe -> devuelve 404
         Route::post('/user', 'UserController@updateUserLoggedJWT');
 
         //APIs de Administración de Usuarios
-        Route::post('/admin/user', 'UserController@createUserJWT');
-        Route::get('/admin/user/{user_id}', 'UserController@getUserManagedJWT');
-        Route::post('/admin/user/{user_id}', 'UserController@updateUserManagedJWT');
+        Route::group([
+            'middleware' => ['UserIsAdminMiddleware'],
+            'prefix' => 'admin'
+        ], function () {
+            //Admin de USUARIOS
+            Route::post('/user', 'UserController@createUserJWT');
+            Route::get('/user/{user_id}', 'UserController@getUserManagedJWT');
+            Route::post('/user/{user_id}', 'UserController@updateUserManagedJWT');
 
+            //Admin de LOCATIONS
+            Route::post('/locations', 'LocationController@createLocation');
+            Route::get('/locations', 'LocationController@getLocations');
+            Route::get('/locations/{location}', 'LocationController@getLocation');
+            Route::post('/locations/{location}', 'LocationController@updateLocation');
+
+        });
 
         //PRUEBA de llamada a API validando el TOKEN recibido por header
        // Route::get('/conversations/{conversation_id}', 'MessagesController@getMessagesFromConversationTOKEN');
