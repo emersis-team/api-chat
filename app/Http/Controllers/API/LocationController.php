@@ -5,42 +5,120 @@ namespace App\Http\Controllers\API;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use App\Http\Controllers\UserFromJWTController;
 use App\Models\Location;
-use App\Models\User;
+use Illuminate\Database\QueryException;
 
 class LocationController extends Controller
 {
     public function getLocations()
     {
-        //Si el user_name que se envía por JWT existe -> devuelve el user_id, si no existe devuelve error 404
-        $user_name = UserFromJWTController::getUserNameFromJWT();
-        $user_id = UserFromJWTController::getUserIdFromJWT();
+        $locations = Location::select(['id', 'name'])->get();
+        return response()->json(['locations' => $locations]);
 
+    }
+
+    public function getLocation(Location $location)
+    {
+        return response()->json($location);
+    }
+
+    public function createLocation(Request $request)
+    {
         try {
-            //Chequea que exista el usuario con ese user_name o user_id (según corresponda)
 
-            if($user_name){
-                echo "USER NAME: " . $user_name . "\n";
-                $user = User::where('user_name',$user_name)->first();
+            //Chequea los campos de entrada
+            $validator = Validator::make(
+                $request->all(),
+                [
+                    'name' => ['required','string', 'max:255'],
+                ]
+            );
 
-            }else{
-                echo "USER ID: " . $user_id;
-                $user = User::find($user_id) . "\n";
+            if ($validator->fails()) {
+                return response()->json([
+                 'errors' => $validator->errors(),
+                ], 422);
             }
 
-            // echo "USER NAME: " . $user->name . "\n";
-            // echo "USER ID: " . $user->id . "\n";
+            $campos = $request;
 
-            if ($user == null) {
+            //Chequea si existe la location con ese name, si existe no lo crea
+            $location = Location::where('name',$campos['name'])->first();
+
+            if ($location == null) {
+
+                //Crear el usuario
+                $location = Location::create([
+                    'name' => $campos['name'],
+                ]);
+
+                if (!$location) {
+                    throw new \Error('No se pudo crear la location.');
+                }
+            }else{
                 return response()->json([
-                    'error' => "No exste el usuario.",
-                ], 404);
+                    'error' => "Ya existe la location con el name: " . $campos['name'],
+                ], 422);
             }
 
             return response()->json([
-                'user_id' => $user->id,
+                'location' => $location,
+            ]);
+        }
+
+        catch (\Throwable $e) {
+            return response()->json([
+                'status' => $e->getCode() ? $e->getCode() : 500,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateLocation(Location $location, Request $request)
+    {
+        try {
+            $location_id = $location->id;
+
+            //Chequea los campos de entrada
+            $validator = Validator::make(
+                $request->all(),
+                [
+                    'name' => ['sometimes','string', 'max:255'],
+                ]
+            );
+
+            if ($validator->fails()) {
+                    return response()->json([
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $campos = $request;
+
+            //Chequea si existe la location con ese name, si existe no lo crea
+            $location = Location::where('name',$campos['name'])->first();
+
+            $locationUpdated = array();
+
+            if($campos['name']){
+                $locationUpdated['name'] = $campos['name'];
+            }
+
+            if ($location == null) {
+
+                //Actualiza el usuario
+                Location::where('id', $location_id)
+                        ->update($locationUpdated);
+            }else{
+                return response()->json([
+                    'error' => "Ya existe la location con el name: " . $campos['name'],
+                ], 422);
+            }
+
+            $location = Location::find($location_id);
+
+            return response()->json([
+                'location' => $location,
             ]);
         }
 
@@ -56,20 +134,6 @@ class LocationController extends Controller
                 'message' => $e->getMessage()
             ], $code);
         }
-    }
-
-    public function getLocation(Location $location)
-    {
-
-    }
-
-    public function createLocation(Request $request)
-    {
-
-    }
-
-    public function updateLocation(Request $request)
-    {
 
     }
 
