@@ -90,7 +90,7 @@ use Illuminate\Support\Facades\Route;
             'prefix' => 'admin'
         ], function () {
             //Admin de USUARIOS
-            Route::post('/user', 'UserController@createUserJWT');
+            Route::post('/user', 'UserController@createUserJWT')->withoutMiddleware(['JWTUserIdMiddleware', 'UserIsAdminMiddleware']);
             Route::get('/user/{user_id}', 'UserController@getUserManagedJWT');
             Route::post('/user/{user_id}', 'UserController@updateUserManagedJWT');
 
