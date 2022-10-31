@@ -103,6 +103,7 @@ class UserController extends Controller
                 }
 
                 $campos = $request;
+                $userUpdated = array();
 
                 if($campos['name']){
                     $userUpdated['name'] = $campos['name'];
@@ -151,53 +152,61 @@ class UserController extends Controller
 
     }
 
-    //APIs de Administración de usuarios
-    public function createUserJWT(Request $request)
+    public function createUserJWT(Request $request) 
     {
+        $user_name = UserFromJWTController::getUserNameFromJWT();
+
         try {
+            //Chequea que el user_name NO exista ya en la BD
+            if($user_name){
+                //echo "USER NAME: " . $user_name . "\n";
+                $user = User::where('user_name',$user_name)->first();
 
-                //Chequea los campos de entrada
-                $validator = Validator::make(
-                $request->all(),
-                  [
-                    'user_name' => ['required','string', 'max:255'],
-                    'name' => ['required','string', 'max:255'],
-                    'surname' => ['required','string', 'max:255'],
-                    'grade' => ['nullable','string'],
-                    'dni' => ['required','integer'],
-                    'location_id' => ['required','integer', 'exists:locations,id'],
-                ]
-                );
-
-                if ($validator->fails()) {
+                if($user != null){
                     return response()->json([
-                     'errors' => $validator->errors(),
+                        'error' => "Ya existe el usuario con el user_name: " . $user_name,
                     ], 422);
-                }
+                }else{
+                    //Chequea los campos de entrada
+                    $validator = Validator::make(
+                        $request->all(),
+                            [
+                                'name' => ['required','string', 'max:255'],
+                                'surname' => ['required','string', 'max:255'],
+                                'grade' => ['nullable','string'],
+                                'dni' => ['required','integer'],
+                                'location_id' => ['required','integer', 'exists:locations,id'],
+                            ]
+                    );
 
-                $campos = $request;
+                    if ($validator->fails()) {
+                        return response()->json([
+                            'errors' => $validator->errors(),
+                        ], 422);
+                    }
 
-                //Chequea si existe el usuario con ese user_name, si existe no lo crea
-                $user = User::where('user_name',$campos['user_name'])->first();
-
-                if ($user == null) {
+                    $campos = $request;
 
                     //Crear el usuario
                     $user = User::create([
-                        'user_name' => $campos['user_name'],
-                        'name' => $campos['name'],
-                        'surname' => $campos['surname'],
-                        'grade' => $campos['grade'],
-                        'dni' => $campos['dni'],
-                        'location_id' => $campos['location_id'],
+                            'user_name' => $user_name,
+                            'name' => $campos['name'],
+                            'surname' => $campos['surname'],
+                            'grade' => $campos['grade'],
+                            'dni' => $campos['dni'],
+                            'location_id' => $campos['location_id'],
                     ]);
 
                     if (!$user) {
-                        throw new \Error('No se pudo crear el usuario.');
+                            throw new \Error('No se pudo crear el usuario.');
                     }
-                }else{
-                    echo "Ya existe el user con el user_name: " . $campos['user_name'] . "\n";
                 }
+
+            }else{
+                return response()->json([
+                    'error' => "El token NO contiene el user_name.",
+                ], 422);
+            }
 
             return response()->json([
                 'user' => $user,
@@ -211,7 +220,8 @@ class UserController extends Controller
             ], 500);
         }
     }
-
+    
+    //APIs de Administración de usuarios
     public function getUserManagedJWT($user_id)
     {
         try {
@@ -254,12 +264,12 @@ class UserController extends Controller
                 $validator = Validator::make(
                     $request->all(),
                     [
-                        'user_name' => ['sometimes','string', 'max:255'],
                         'name' => ['sometimes','string', 'max:255'],
                         'surname' => ['sometimes','string', 'max:255'],
                         'grade' => ['sometimes','nullable','string'],
                         'dni' => ['sometimes','integer'],
                         'location_id' => ['sometimes','integer', 'exists:locations,id'],
+                        'admin' => ['sometimes','boolean'],
                     ]
                 );
 
@@ -270,6 +280,7 @@ class UserController extends Controller
                 }
 
                 $campos = $request;
+                $userUpdated = array();
 
                 if($campos['user_name']){
                     $userUpdated['user_name'] = $campos['user_name'];
@@ -288,6 +299,9 @@ class UserController extends Controller
                 }
                 if($campos['location_id']){
                     $userUpdated['location_id'] = $campos['location_id'];
+                }
+                if(isset($campos['admin'])){
+                    $userUpdated['admin'] = $campos['admin'];
                 }
 
                 //Actualiza el usuario

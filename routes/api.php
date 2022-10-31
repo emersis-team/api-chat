@@ -83,14 +83,14 @@ use Illuminate\Support\Facades\Route;
         //APIs de Autogestión de Usuarios
         Route::get('/user', 'UserController@getUserLoggedJWT')->withoutMiddleware(['JWTUserIdMiddleware']);  //Esta API también se llama después del login contra el portal, si EXISTE el usuario -> devuelve el objeto usuario, SI NO existe -> devuelve 404
         Route::post('/user', 'UserController@updateUserLoggedJWT');
+        Route::post('/newUser', 'UserController@createUserJWT')->withoutMiddleware(['JWTUserIdMiddleware']);
 
         //APIs de Administración de Usuarios
         Route::group([
             'middleware' => ['UserIsAdminMiddleware'],
             'prefix' => 'admin'
         ], function () {
-            //Admin de USUARIOS
-            Route::post('/user', 'UserController@createUserJWT')->withoutMiddleware(['JWTUserIdMiddleware', 'UserIsAdminMiddleware']);
+            //Admin de USUARIOS            
             Route::get('/user/{user_id}', 'UserController@getUserManagedJWT');
             Route::post('/user/{user_id}', 'UserController@updateUserManagedJWT');
 
