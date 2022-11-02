@@ -82,23 +82,29 @@ use Illuminate\Support\Facades\Route;
 
         //APIs de Autogestión de Usuarios
         Route::get('/user', 'UserController@getUserLoggedJWT')->withoutMiddleware(['JWTUserIdMiddleware']);  //Esta API también se llama después del login contra el portal, si EXISTE el usuario -> devuelve el objeto usuario, SI NO existe -> devuelve 404
-        Route::post('/user', 'UserController@updateUserLoggedJWT');
-        Route::post('/newUser', 'UserController@createUserJWT')->withoutMiddleware(['JWTUserIdMiddleware']);
+        Route::put('/user', 'UserController@updateUserLoggedJWT');
+        Route::post('/user', 'UserController@createUserJWT')->withoutMiddleware(['JWTUserIdMiddleware']);
 
         //APIs de Administración de Usuarios
         Route::group([
             'middleware' => ['UserIsAdminMiddleware'],
             'prefix' => 'admin'
         ], function () {
-            //Admin de USUARIOS            
+            //Admin de USUARIOS
             Route::get('/user/{user_id}', 'UserController@getUserManagedJWT');
-            Route::post('/user/{user_id}', 'UserController@updateUserManagedJWT');
+            Route::put('/user/{user_id}', 'UserController@updateUserManagedJWT');
 
             //Admin de LOCATIONS
             Route::post('/locations', 'LocationController@createLocation');
             Route::get('/locations', 'LocationController@getLocations');
             Route::get('/locations/{location}', 'LocationController@getLocation');
-            Route::post('/locations/{location}', 'LocationController@updateLocation');
+            Route::put('/locations/{location}', 'LocationController@updateLocation');
+
+            //Admin de GROUPS
+            Route::post('/groups', 'GroupController@createGroup');
+            Route::get('/groups', 'GroupController@getGroups');
+            Route::get('/groups/{group}', 'GroupController@getGroup');
+            Route::put('/groups/{group}', 'GroupController@updateGroup');
 
         });
 
