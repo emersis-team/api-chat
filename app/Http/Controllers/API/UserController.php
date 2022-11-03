@@ -152,7 +152,7 @@ class UserController extends Controller
 
     }
 
-    public function createUserJWT(Request $request) 
+    public function createUserJWT(Request $request)
     {
         $user_name = UserFromJWTController::getUserNameFromJWT();
 
@@ -220,15 +220,15 @@ class UserController extends Controller
             ], 500);
         }
     }
-    
+
     //APIs de Administración de usuarios
     public function getUserManagedJWT($user_id)
     {
         try {
             $user = User::where('id',$user_id)->first();
 
-            echo "USER NAME: " . $user->name . "\n";
-            echo "USER ID: " . $user->id . "\n";
+            // echo "USER NAME: " . $user->name . "\n";
+            // echo "USER ID: " . $user->id . "\n";
 
             if ($user == null) {
                 return response()->json([
