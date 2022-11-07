@@ -12,7 +12,7 @@ class GroupController extends Controller
 {
     public function getGroups()
     {
-        $groups = Group::select(['id', 'name'])->get();
+        $groups = Group::select(['id', 'name'])->orderBy('name', 'asc')->get();
         return response()->json(['groups' => $groups]);
 
     }
@@ -96,7 +96,9 @@ class GroupController extends Controller
             $campos = $request;
 
             //Chequea si existe el group con ese name, si existe no lo crea
-            $group = Group::where('name',$campos['name'])->first();
+            $group = Group::where('name',$campos['name'])
+                            ->where('id','<>', $group_id)
+                            ->first();
 
             $groupUpdated = array();
 

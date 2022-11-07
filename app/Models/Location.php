@@ -8,5 +8,7 @@ class Location extends Model
 {
     protected $fillable = [
         'name',
+        'address',
+        'contact_info'
     ];
 }

@@ -12,7 +12,7 @@ class LocationController extends Controller
 {
     public function getLocations()
     {
-        $locations = Location::select(['id', 'name'])->get();
+        $locations = Location::select(['id', 'name','address','contact_info'])->orderBy('name', 'asc')->get();
         return response()->json(['locations' => $locations]);
 
     }
@@ -31,6 +31,8 @@ class LocationController extends Controller
                 $request->all(),
                 [
                     'name' => ['required','string', 'max:255'],
+                    'address' => ['sometimes','string', 'max:255'],
+                    'contact_info' => ['sometimes','string', 'max:255'],
                 ]
             );
 
@@ -50,6 +52,8 @@ class LocationController extends Controller
                 //Crear el usuario
                 $location = Location::create([
                     'name' => $campos['name'],
+                    'address' => $campos['address'],
+                    'contact_info' => $campos['contact_info'],
                 ]);
 
                 if (!$location) {
@@ -84,6 +88,8 @@ class LocationController extends Controller
                 $request->all(),
                 [
                     'name' => ['sometimes','string', 'max:255'],
+                    'address' => ['sometimes','string', 'max:255'],
+                    'contact_info' => ['sometimes','string', 'max:255'],
                 ]
             );
 
@@ -96,12 +102,16 @@ class LocationController extends Controller
             $campos = $request;
 
             //Chequea si existe la location con ese name, si existe no lo crea
-            $location = Location::where('name',$campos['name'])->first();
+            $location = Location::where('name',$campos['name'])
+                                  ->where('id','<>', $location_id)
+                                  ->first();
 
             $locationUpdated = array();
 
             if($campos['name']){
                 $locationUpdated['name'] = $campos['name'];
+                $locationUpdated['address'] = $campos['address'];
+                $locationUpdated['contact_info'] = $campos['contact_info'];
             }
 
             if ($location == null) {
