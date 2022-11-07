@@ -12,11 +12,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 
-use App\Models\UserPosition;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use App\Http\Controllers\UserFromJWTController;
@@ -258,6 +254,8 @@ class UserController extends Controller
     public function updateUserManagedJWT($user_id, Request $request)
     {
         try {
+            DB::beginTransaction();
+
             $user = User::where('id',$user_id)->first();
             if ($user != null) {
                 //Chequea los campos de entrada
@@ -270,6 +268,14 @@ class UserController extends Controller
                         'dni' => ['sometimes','integer'],
                         'location_id' => ['sometimes','integer', 'exists:locations,id'],
                         'admin' => ['sometimes','boolean'],
+                        'contacts_create' => ['sometimes', 'array'],
+                        'contacts_create.*' => ['integer', 'exists:users,id'],
+                        'contacts_delete' => ['sometimes', 'array'],
+                        'contacts_delete.*' => ['integer', 'exists:users,id'],
+                        'groups_create' => ['sometimes', 'array'],
+                        'groups_create.*' => ['integer', 'exists:groups,id'],
+                        'groups_delete' => ['sometimes', 'array'],
+                        'groups_delete.*' => ['integer', 'exists:groups,id'],
                     ]
                 );
 
@@ -304,6 +310,48 @@ class UserController extends Controller
                     $userUpdated['admin'] = $campos['admin'];
                 }
 
+                //ALTA y BAJA de Contactos y grupos 
+                if($campos['contacts_create']){
+                    foreach($campos['contacts_create'] as $h => $contact_create){
+                        if($user_id <> $contact_create){
+                            $contacts_create[$h]['user_id'] = $user_id;
+                            $contacts_create[$h]['contact_id'] = $contact_create;
+                            $contacts_create[$h]['contact_type'] = "App\\User";
+
+                            $contact_creation = UserContact::where('contact_type' , "App\User")
+                                                        ->where('user_id', $user_id)
+                                                        ->where('contact_id' , $contact_create) 
+                                                         ->first();
+
+                            echo("HOLA: " . $contact_creation . "CHAU");
+                        }
+                    }
+                }
+
+                if($campos['contacts_delete']){
+                    foreach($campos['contacts_delete'] as $i => $contact_delete){
+                        $contacts_delete[$i]['user_id'] = $user_id;
+                        $contacts_delete[$i]['contact_id'] = $contact_delete;
+                        $contacts_delete[$i]['contact_type'] = "App\User";
+                    }
+                }
+
+                if($campos['groups_create']){
+                    foreach($campos['groups_create'] as $j => $group_create){
+                        $groups_create[$j]['user_id'] = $user_id;
+                        $groups_create[$j]['contact_id'] = $group_create;
+                        $groups_create[$j]['contact_type'] = "App\Models\Group";
+                    }
+                }
+
+                if($campos['groups_delete']){
+                    foreach($campos['groups_delete'] as $k => $group_delete){
+                        $groups_delete[$k]['user_id'] = $user_id;
+                        $groups_delete[$k]['contact_id'] = $group_delete;
+                        $groups_delete[$k]['contact_type'] = "App\Models\Group";
+                    }
+                }
+
                 //Actualiza el usuario
                 User::where('id', $user_id)
                             ->update($userUpdated);
@@ -314,18 +362,26 @@ class UserController extends Controller
                 ], 404);
             }
 
+            DB::commit();
+
             $user = User::find($user_id);
             return response()->json([
                 'user' => $user,
+                'contacts' => $contacts_create,
+                'contacts_delete' => $contacts_delete,
+                'groups' => $groups_create,
+                'groups_delete' => $groups_delete,
             ]);
+
         }
 
         catch (QueryException $e) {
+            DB::rollBack();
             throw new \Error('Hay un Error SQL');
         }
 
         catch (\Throwable $e) {
-
+            DB::rollBack();
             $code = $e->getCode() ? $e->getCode() : 500;
             return response()->json([
                 'status' => $e->getCode() ? $e->getCode() : 500,
