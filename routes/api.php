@@ -94,6 +94,8 @@ use Illuminate\Support\Facades\Route;
             Route::get('/user/{user_id}', 'UserController@getUserManagedJWT');
             Route::put('/user/{user_id}', 'UserController@updateUserManagedJWT');
 
+            Route::get('/users/{location_id?}', 'UserController@getUsersJWT');
+
             //Admin de LOCATIONS
             Route::post('/locations', 'LocationController@createLocation');
             Route::get('/locations', 'LocationController@getLocations');

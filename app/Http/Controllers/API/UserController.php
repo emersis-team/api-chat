@@ -268,14 +268,10 @@ class UserController extends Controller
                         'dni' => ['sometimes','integer'],
                         'location_id' => ['sometimes','integer', 'exists:locations,id'],
                         'admin' => ['sometimes','boolean'],
-                        'contacts_create' => ['sometimes', 'array'],
-                        'contacts_create.*' => ['integer', 'exists:users,id'],
-                        'contacts_delete' => ['sometimes', 'array'],
-                        'contacts_delete.*' => ['integer', 'exists:users,id'],
-                        'groups_create' => ['sometimes', 'array'],
-                        'groups_create.*' => ['integer', 'exists:groups,id'],
-                        'groups_delete' => ['sometimes', 'array'],
-                        'groups_delete.*' => ['integer', 'exists:groups,id'],
+                        'contacts' => ['sometimes', 'array'],
+                        'contacts.*' => ['integer', 'exists:users,id'],
+                        'groups' => ['sometimes', 'array'],
+                        'groups.*' => ['integer', 'exists:groups,id'],
                     ]
                 );
 
@@ -310,46 +306,99 @@ class UserController extends Controller
                     $userUpdated['admin'] = $campos['admin'];
                 }
 
-                //ALTA y BAJA de Contactos y grupos 
-                if($campos['contacts_create']){
-                    foreach($campos['contacts_create'] as $h => $contact_create){
-                        if($user_id <> $contact_create){
-                            $contacts_create[$h]['user_id'] = $user_id;
-                            $contacts_create[$h]['contact_id'] = $contact_create;
-                            $contacts_create[$h]['contact_type'] = "App\\User";
+                //Contactos y grupos
 
-                            $contact_creation = UserContact::where('contact_type' , "App\User")
+                $contacts = array();
+                $groups = array();
+
+                if($campos['contacts']){
+                    foreach($campos['contacts'] as $h => $contact_id){
+                        if($user_id <> $contact_id){
+                            $contacts_id[$h] = $contact_id;
+
+                            $contacts[$h]['user_id'] = $user_id;
+                            $contacts[$h]['contact_id'] = $contact_id;
+                            $contacts[$h]['contact_type'] = "App\\User";
+
+                            $contact_exists = UserContact::where('contact_type' , "App\User")
                                                         ->where('user_id', $user_id)
-                                                        ->where('contact_id' , $contact_create) 
+                                                        ->where('contact_id' , $contact_id)
                                                          ->first();
 
-                            echo("HOLA: " . $contact_creation . "CHAU");
+                            if(!$contact_exists){
+                                 $contact_create = UserContact::create([
+                                    'user_id' => $user_id,
+                                    'contact_id' => $contact_id,
+                                    'contact_type' => "App\User",
+                                ]);
+
+                                $contact_create_vice = UserContact::create([
+                                    'user_id' => $contact_id,
+                                    'contact_id' => $user_id,
+                                    'contact_type' => "App\User",
+                                ]);
+                            }
                         }
                     }
+
+                    //Borra los contactos anteriores que NO están especificados ahora y viceversa
+                    $contact_delete = UserContact::where('contact_type' , "App\User")
+                    ->where('user_id', $user_id)
+                    ->whereNotIN('contact_id' , $contacts_id)
+                     ->delete();
+
+                     $contact_delete_vice = UserContact::where('contact_type' , "App\User")
+                    ->where('contact_id', $user_id)
+                    ->whereNotIN('user_id' , $contacts_id)
+                     ->delete();
+                }else{ //NO se envió el array de contacts -> NO tiene asociado contactos
+
+                    //Borra los contactos anteriores y viceversa
+                    $contact_delete = UserContact::where('contact_type' , "App\User")
+                    ->where('user_id', $user_id)
+                    ->delete();
+
+                    $contact_delete_vice = UserContact::where('contact_type' , "App\User")
+                    ->where('contact_id', $user_id)
+                     ->delete();
+
                 }
 
-                if($campos['contacts_delete']){
-                    foreach($campos['contacts_delete'] as $i => $contact_delete){
-                        $contacts_delete[$i]['user_id'] = $user_id;
-                        $contacts_delete[$i]['contact_id'] = $contact_delete;
-                        $contacts_delete[$i]['contact_type'] = "App\User";
-                    }
-                }
+                if($campos['groups']){
+                    foreach($campos['groups'] as $j => $group_id){
+                        $groups_id[$j] = $group_id;
 
-                if($campos['groups_create']){
-                    foreach($campos['groups_create'] as $j => $group_create){
-                        $groups_create[$j]['user_id'] = $user_id;
-                        $groups_create[$j]['contact_id'] = $group_create;
-                        $groups_create[$j]['contact_type'] = "App\Models\Group";
-                    }
-                }
+                        $groups[$j]['user_id'] = $user_id;
+                        $groups[$j]['contact_id'] = $group_id;
+                        $groups[$j]['contact_type'] = "App\Models\Group";
 
-                if($campos['groups_delete']){
-                    foreach($campos['groups_delete'] as $k => $group_delete){
-                        $groups_delete[$k]['user_id'] = $user_id;
-                        $groups_delete[$k]['contact_id'] = $group_delete;
-                        $groups_delete[$k]['contact_type'] = "App\Models\Group";
+                        $group_exists = UserContact::where('contact_type' , "App\Models\Group")
+                                                        ->where('user_id', $user_id)
+                                                        ->where('contact_id' , $group_id)
+                                                         ->first();
+
+                        if(!$group_exists){
+                            $group_create = UserContact::create([
+                                            'user_id' => $user_id,
+                                            'contact_id' => $group_id,
+                                            'contact_type' => "App\Models\Group",
+                            ]);
+                        }
                     }
+
+                    //Borra los grupos anteriores que NO están especificados ahora
+                    $contact_delete = UserContact::where('contact_type' , "App\Models\Group")
+                                                    ->where('user_id', $user_id)
+                                                    ->whereNotIN('contact_id' , $groups_id)
+                                                    ->delete();
+
+                }else{ //NO se envió el array de groups -> NO tiene asociado grupos
+
+                    //Borra los grupos anteriores
+                    $contact_delete = UserContact::where('contact_type' , "App\Models\Group")
+                                                    ->where('user_id', $user_id)
+                                                    ->delete();
+
                 }
 
                 //Actualiza el usuario
@@ -365,12 +414,11 @@ class UserController extends Controller
             DB::commit();
 
             $user = User::find($user_id);
+
             return response()->json([
                 'user' => $user,
-                'contacts' => $contacts_create,
-                'contacts_delete' => $contacts_delete,
-                'groups' => $groups_create,
-                'groups_delete' => $groups_delete,
+                'contacts' => $contacts_id,
+                'groups' => $groups_id,
             ]);
 
         }
@@ -389,5 +437,36 @@ class UserController extends Controller
             ], $code);
         }
 
+    }
+
+    public function getUsersJWT($location_id = 0)
+    {
+        try {
+
+            if($location_id > 0){
+                $users = User::where('location_id',$location_id)
+                                ->orderby('user_name', 'asc')
+                                ->get();
+            }else{
+                $users = User::orderby('user_name', 'asc')->get();
+            }
+
+            return response()->json([
+                'users' => $users,
+            ]);
+        }
+
+        catch (QueryException $e) {
+            throw new \Error('Hay un Error SQL');
+        }
+
+        catch (\Throwable $e) {
+
+            $code = $e->getCode() ? $e->getCode() : 500;
+            return response()->json([
+                'status' => $e->getCode() ? $e->getCode() : 500,
+                'message' => $e->getMessage()
+            ], $code);
+        }
     }
 }
