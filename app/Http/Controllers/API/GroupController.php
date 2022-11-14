@@ -94,27 +94,24 @@ class GroupController extends Controller
             }
 
             $campos = $request;
-
-            //Chequea si existe el group con ese name, si existe no lo crea
-            $group = Group::where('name',$campos['name'])
-                            ->where('id','<>', $group_id)
-                            ->first();
-
             $groupUpdated = array();
 
             if($campos['name']){
-                $groupUpdated['name'] = $campos['name'];
-            }
+                //Si se envía el name -> Chequea si existe otro group con ese name, si existe no lo actualiza
+                $group = Group::where('name',$campos['name'])
+                                ->where('id','<>', $group_id)
+                            ->first();
 
-            if ($group == null) {
+                if ($group != null) {
+                    return response()->json([
+                        'error' => "Ya existe el group con el nombre: " . $campos['name'],
+                    ], 422);
+                }
+                $groupUpdated['name'] = $campos['name'];
 
                 //Actualiza el usuario
                 Group::where('id', $group_id)
                         ->update($groupUpdated);
-            }else{
-                return response()->json([
-                    'error' => "Ya existe el group con el nombre: " . $campos['name'],
-                ], 422);
             }
 
             $group = Group::find($group_id);

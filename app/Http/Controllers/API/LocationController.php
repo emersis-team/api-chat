@@ -100,36 +100,41 @@ class LocationController extends Controller
             }
 
             $campos = $request;
-
-            //Chequea si existe la location con ese name, si existe no lo crea
-            $location = Location::where('name',$campos['name'])
-                                  ->where('id','<>', $location_id)
-                                  ->first();
-
             $locationUpdated = array();
 
+            //Si se envía un valor de  name -> Chequea si existe la location con ese name, si existe no lo crea
             if($campos['name']){
+                $location = Location::where('name',$campos['name'])
+                                  ->where('id','<>', $location_id)
+                                  ->first();
+            
+                if($location != null){
+                    return response()->json([
+                        'error' => "Ya existe la location con el name: " . $campos['name'],
+                    ], 422);
+                }
+
                 $locationUpdated['name'] = $campos['name'];
+            }
+
+            if($campos['address']){
                 $locationUpdated['address'] = $campos['address'];
+            }
+            
+            if($campos['contact_info']){
                 $locationUpdated['contact_info'] = $campos['contact_info'];
             }
 
-            if ($location == null) {
+            if ($campos['name'] || $campos['address'] || $campos['contact_info']) {
 
-                //Actualiza el usuario
+                //Actualiza la location
                 Location::where('id', $location_id)
                         ->update($locationUpdated);
-            }else{
-                return response()->json([
-                    'error' => "Ya existe la location con el name: " . $campos['name'],
-                ], 422);
             }
 
             $location = Location::find($location_id);
 
-            return response()->json([
-                'location' => $location,
-            ]);
+            return response()->json($location);
         }
 
         catch (QueryException $e) {
