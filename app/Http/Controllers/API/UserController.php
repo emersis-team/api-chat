@@ -16,6 +16,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use App\Http\Controllers\UserFromJWTController;
+use App\Models\Conversation;
 
 class UserController extends Controller
 {
@@ -339,20 +340,42 @@ class UserController extends Controller
                                     'contact_id' => $user_id,
                                     'contact_type' => "App\User",
                                 ]);
+
+                                //Chequear si existe la Conversation entre ambos Contactos
+                                $conversation_exists = Conversation::where('type', "INDIVIDUAL")
+                                                                     ->where('user_id_1', $user_id)
+                                                                     ->where('user_id_2', $contact_id)
+                                                                     ->orWhere(function ($query) use ($user_id, $contact_id) {
+                                                                        $query->where('type', "INDIVIDUAL")
+                                                                        ->where('user_id_2', $contact_id)
+                                                                        ->where('user_id_1', $user_id);
+                                                                    })
+                                                                    ->first();
+
+                                if(!$conversation_exists){
+                                    $conversation_create = Conversation::create([
+                                        'type' => 'INDIVIDUAL',
+                                        'user_id_1' => $user_id,
+                                        'user_id_2' => $contact_id,
+                                    ]);
+
+                                    Conversation::where('id',$conversation_create->id)
+                                                    ->update(['updated_at' => NULL]); //Se pone en NULL porque todavía no hay mensajes
+                                }
                             }
                         }
                     }
 
                     //Borra los contactos anteriores que NO están especificados ahora y viceversa
                     $contact_delete = UserContact::where('contact_type' , "App\User")
-                    ->where('user_id', $user_id)
-                    ->whereNotIN('contact_id' , $contacts_id)
-                     ->delete();
+                                                ->where('user_id', $user_id)
+                                                ->whereNotIN('contact_id' , $contacts_id)
+                                                ->delete();
 
                      $contact_delete_vice = UserContact::where('contact_type' , "App\User")
-                    ->where('contact_id', $user_id)
-                    ->whereNotIN('user_id' , $contacts_id)
-                     ->delete();
+                                                        ->where('contact_id', $user_id)
+                                                        ->whereNotIN('user_id' , $contacts_id)
+                                                        ->delete();
                 }else{ //NO se envió el array de contacts -> NO tiene asociado contactos
 
                     //Borra los contactos anteriores y viceversa
@@ -385,6 +408,21 @@ class UserController extends Controller
                                             'contact_id' => $group_id,
                                             'contact_type' => "App\Models\Group",
                             ]);
+
+                            //Chequear si existe la Conversation entre ambos Contactos
+                            $conversation_exists = Conversation::where('type', "GROUP")
+                                                                ->where('group_id', $group_id)
+                                                                ->first();
+
+                            if(!$conversation_exists){
+                                $conversation_create = Conversation::create([
+                                                                    'type' => 'GROUP',
+                                                                    'group_id' => $group_id,
+                                                                    ]);
+
+                                Conversation::where('id',$conversation_create->id)
+                                                ->update(['updated_at' => NULL]); //Se pone en NULL porque todavía no hay mensajes
+                            }
                         }
                     }
 
