@@ -310,6 +310,8 @@ class UserController extends Controller
 
                 $contacts = array();
                 $groups = array();
+                $contacts_id = array();
+                $groups_id = array();
 
                 if($campos['contacts']){
                     foreach($campos['contacts'] as $h => $contact_id){
