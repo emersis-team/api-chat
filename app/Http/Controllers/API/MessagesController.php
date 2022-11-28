@@ -184,6 +184,7 @@ class MessagesController extends Controller
                 $conversations[$x]['conversation_members']= $conversation_members;
                 $conversations[$x]['ammount_no_read']= $ammount_messages_no_read;
             }
+
             //Guardo el usuario logueado dentro de los usuarios con conversación activa
             if($i > 0){
                 $active_users[$i+1] = $user_id;
@@ -931,16 +932,16 @@ class MessagesController extends Controller
                 }
             }
 
-            $active_conversations = Conversation::where('type', 'INDIVIDUAL')
+            $active_conversations = Conversation::where('type', "INDIVIDUAL")
                                                 ->where('user_id_1', $user_id)
                                                 ->whereIn('user_id_2', $userContactsUserIds)
                                                 ->orWhere(function ($query) use ($user_id, $userContactsUserIds) {
-                                                    $query->where('type', 'INDIVIDUAL')
+                                                    $query->where('type', "INDIVIDUAL")
                                                     ->where('user_id_2', $user_id)
                                                     ->whereIn('user_id_1', $userContactsUserIds);
                                                 })
                                                 ->orWhere(function ($query) use ($userContacsGroupIds) {
-                                                    $query->where('type', 'GROUP')
+                                                    $query->where('type', "GROUP")
                                                     ->whereIN('group_id', $userContacsGroupIds);
                                                 })
                                                 ->with('user_1')
