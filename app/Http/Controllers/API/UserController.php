@@ -222,6 +222,14 @@ class UserController extends Controller
     {
         try {
             $user = User::where('id',$user_id)->first();
+            $groups = UserContact::select('contact_id as group_id')
+                                   ->where('user_id',$user_id)
+                                   ->where('contact_type','App\Models\Group')
+                                   ->get();
+
+            $contacts = UserContact::where('user_id',$user_id)
+                                   ->where('contact_type','App\User')
+                                   ->get('contact_id');
 
             // echo "USER NAME: " . $user->name . "\n";
             // echo "USER ID: " . $user->id . "\n";
@@ -234,6 +242,8 @@ class UserController extends Controller
 
             return response()->json([
                 'user' => $user,
+                'groups' => $groups,
+                'contacts' => $contacts,
             ]);
         }
 
