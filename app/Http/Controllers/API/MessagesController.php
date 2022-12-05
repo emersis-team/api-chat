@@ -1108,7 +1108,7 @@ class MessagesController extends Controller
                 //Chequea que la conversacion pertenezca al usuario logueado, si es así actualiza la fecha última de visualización de esta conversación/contacto
                 if ($conversation->type == "INDIVIDUAL") {
 
-                    if($user_id !== $conversation->user_id_1 && $user_id !== $conversation->user_id_2){
+                    if($user_id != $conversation->user_id_1 && $user_id != $conversation->user_id_2){
                         throw new AccessDeniedHttpException(__('El usuario NO es parte de la conversación individual.'));
                     }else{
                         //Averigua cual es el contact_id (user) para luego actualizar la tabla user_contacts con la ultima fecha de visualización de la conversación con ese contacto
